@@ -19,7 +19,7 @@ const formSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(10).max(10).regex(/^\d+$/, "Phone number must be digits only"),
 })
-const Login= ()=>{
+const Signup= ()=>{
     const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,10 +34,9 @@ const Login= ()=>{
   }
 
     return(
-        <div style={({
-            backgroundColor: "black"
-        })} >
-            <h1>Login</h1>
+        <div className="flex flex-col bg-[black] justify-center items-center" >
+        <div  >
+            <h1>Signup</h1>
              <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
@@ -45,7 +44,7 @@ const Login= ()=>{
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Hame</FormLabel>
               <FormControl>
                 <Input placeholder="Name" {...field} />
               </FormControl>
@@ -83,7 +82,8 @@ const Login= ()=>{
       </form>
     </Form>
         </div>
+        </div>
     )
 }
 
-export default Login;
+export default Signup;
