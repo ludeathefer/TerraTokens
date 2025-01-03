@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Table</title>
+</head>
+<body>
+    <h1>Data Table</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Seller</th>
+                <th>Buyer</th>
+                <th>Price</th>
+                <th>City</th>
+                <th>Ward</th>
+                <th>Street Number</th>
+                <th>Plot Number</th>
+                <th>Land Class</th>
+                <th>Action</th> <!-- New column for the button -->
+            </tr>
+        </thead>
+        <tbody>
+            <% data.forEach(item => { %>
+                <tr>
+                    <td><%= item.seller %></td>
+                    <td><%= item.buyer %></td>
+                    <td><%= item.price %></td>
+                    <td><%= item.city %></td>
+                    <td><%= item.ward %></td>
+                    <td><%= item.street_number %></td>
+                    <td><%= item.plot_number %></td>
+                    <td><%= item.land_class %></td>
+                    <!-- Button to log plot number -->
+                    <td><button onclick="logPlotNumber('<%= item.plot_number %>')">Log Plot Number</button></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+
+    <script>
+        function logPlotNumber(plotNumber) {
+            console.log(plotNumber);
+        }
+    </script>
+</body>
+</html>
