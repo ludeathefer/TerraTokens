@@ -74,3 +74,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  input[type="number"] {
+    @apply appearance-none; /* Removes default styling */
+    -moz-appearance: textfield; /* For Firefox */
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    @apply m-0; /* Removes margin */
+    -webkit-appearance: none; /* Hides the spinners in WebKit browsers */
+  }
+}
