@@ -130,7 +130,7 @@ const LandDetail = () => {
                   <h1 className="text-xl font-medium">Number of Tokens</h1>
                   <p className="text-2xl font-bold">50</p>
                 </div>
-                <Button className="w-20 h-10 text-md"> Sell</Button>
+                <Button className="w-20 h-10 text-lg"> Sell</Button>
               </div>
               <TokenTable
                 buyButton={

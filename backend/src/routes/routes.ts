@@ -153,48 +153,46 @@ router.post("/api/check-user", async (req: Request, res: any) => {
   }
 });
 
-// Get top lands based on recent daily token prices
-router.get("/api/top-lands", async (req: Request, res: Response) => {
+router.get("/api/top-lands", async (req: Request, res: any) => {
   try {
-    const result = await getClient()
+    const recentDateResult = await getClient()
       .db("terra_tokens")
       .collection("daily_tokens")
-      .aggregate([
-        { $sort: { date: -1 } },
-        { $group: { _id: null, mostRecentDate: { $first: "$date" } } },
-        {
-          $lookup: {
-            from: "daily_tokens",
-            let: { recentDate: "$mostRecentDate" },
-            pipeline: [
-              { $match: { $expr: { $eq: ["$date", "$$recentDate"] } } },
-              { $sort: { price: -1 } },
-              { $limit: 10 },
-            ],
-            as: "topTokens",
-          },
-        },
-        {
-          $lookup: {
-            from: "land_tokens",
-            localField: "topTokens.token",
-            foreignField: "token",
-            as: "landDetails",
-          },
-        },
-        { $unwind: "$landDetails" },
-        {
-          $project: {
-            _id: 0,
-            token: "$topTokens.token",
-            price: { $arrayElemAt: ["$topTokens.price", 0] },
-            landDetail: "$landDetails.land_detail",
-          },
-        },
-      ])
+      .find({})
+      .sort({ date: -1 })
+      .limit(1)
       .toArray();
 
-    res.status(200).json(result);
+    if (recentDateResult.length === 0) {
+      return res.status(404).json({ message: "No data found in daily_tokens" });
+    }
+
+    const mostRecentDate = recentDateResult[0].date;
+
+    const topTokens = await getClient()
+      .db("terra_tokens")
+      .collection("daily_tokens")
+      .find({ date: mostRecentDate })
+      .sort({ price: -1 })
+      .limit(10)
+      .toArray();
+
+    const landDetailsPromises = topTokens.map(async (token) => {
+      const landDetail = await getClient()
+        .db("terra_tokens")
+        .collection("land_tokens")
+        .findOne({ token: token.token });
+
+      return {
+        token: token.token,
+        price: token.price,
+        landDetail: landDetail ? landDetail.land_detail : null,
+      };
+    });
+
+    const results = await Promise.all(landDetailsPromises);
+
+    res.status(200).json(results);
   } catch (error) {
     console.error("Error fetching top lands:", error);
     res.status(500).json({ message: "Error fetching top lands" });
@@ -207,9 +205,35 @@ router.get("/api/recent-lands", async (req: Request, res: Response) => {
     const result = await getClient()
       .db("terra_tokens")
       .collection("land_tokens")
-      .find()
-      .sort({ date: -1 })
-      .limit(10)
+      .aggregate([
+        { $sort: { date_created: -1 } }, // Sort by date_created to get recent lands
+        { $limit: 10 }, // Limit to the most recent 10 lands
+        {
+          $lookup: {
+            from: "daily_tokens", // Join with daily_tokens collection
+            localField: "token", // Field from land_tokens
+            foreignField: "token", // Field from daily_tokens
+            as: "latestPriceData", // Output array field for joined data
+          },
+        },
+        {
+          $unwind: {
+            path: "$latestPriceData", // Unwind to get the latest price data as a single object
+            preserveNullAndEmptyArrays: true, // Keep land records even if there is no price data
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            token: 1,
+            land_detail: 1,
+            no_of_tokens: 1,
+            date_created: 1,
+            price: "$latestPriceData.price", // Include price from latestPriceData
+            date: "$latestPriceData.date", // Include date from latestPriceData
+          },
+        },
+      ])
       .toArray();
 
     res.status(200).json(result);
@@ -435,4 +459,39 @@ router.post("/api/buy_tokens", async (req: Request, res: any) => {
   }
 });
 
+router.post("/api/add_land", async (req: Request, res: any) => {
+  const { land_detail, token, no_of_tokens } = req.body; // Access land_detail directly
+
+  // Validate input
+  if (!land_detail || !token || !no_of_tokens) {
+    return res.status(400).json({
+      message: "All fields are required: land_detail, token, no_of_tokens",
+    });
+  }
+
+  try {
+    const database = getClient().db("terra_tokens");
+    const collection = database.collection("land_tokens");
+
+    // Create a new land object
+    const newLand = {
+      land_detail, // Use the correct field name
+      token,
+      no_of_tokens,
+      date_created: new Date(), // Set date_created to the current date
+    };
+
+    // Insert the new land object into the collection
+    const result = await collection.insertOne(newLand);
+
+    // Respond with success message and inserted ID
+    res.status(201).json({
+      message: "Land added successfully",
+      landId: result.insertedId,
+    });
+  } catch (error) {
+    console.error("Error adding land:", error);
+    res.status(500).json({ message: "Error adding land" });
+  }
+});
 export default router;
