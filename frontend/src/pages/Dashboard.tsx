@@ -154,11 +154,11 @@ const Dashboard = () => {
   const userPublicKey = useStore((state) => state.userPublicKey);
   const [topLandsQuery, holdingStatusQuery] = useQueries({
     queries: [
+      { queryKey: ["top-lands"], queryFn: getTopLandsApi },
       {
         queryKey: ["holding-status", userPublicKey],
         queryFn: () => getHoldingStatusApi(userPublicKey),
       },
-      { queryKey: ["top-lands"], queryFn: getTopLandsApi },
     ],
   });
 
