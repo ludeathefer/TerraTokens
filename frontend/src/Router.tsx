@@ -4,6 +4,7 @@ import Signup from "./pages/signup";
 import Dashboard from "./pages/Dashboard";
 import PrivateRoute from "./components/wrappers/PrivateRoute";
 import LandDetail from "./pages/LandDetail";
+import MarketPlace from "./pages/marketplace";
 
 export const router = createBrowserRouter([
   {
@@ -42,7 +43,7 @@ export const router = createBrowserRouter([
     path: "/marketplace",
     element: (
       <PrivateRoute>
-        <LandDetail />
+        <MarketPlace />
       </PrivateRoute>
     ),
   },
