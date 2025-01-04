@@ -125,11 +125,12 @@ const LandDetail = () => {
                 </div>
               </div> */}
               {/* <Separator className=" dark:bg-white/20 " /> */}
-              <div className="flex flex-row w-full p-4 justify-between items-start">
-                <h1 className="text-xl font-medium">Number of Tokens</h1>
-                <div className="flex flex-col">
+              <div className="flex flex-row w-full p-4 justify-between items-center">
+                <div className="flex flex-row justify-start items-center space-x-2">
+                  <h1 className="text-xl font-medium">Number of Tokens</h1>
                   <p className="text-2xl font-bold">50</p>
                 </div>
+                <Button className="w-20 h-10 text-md"> Sell</Button>
               </div>
               <TokenTable
                 buyButton={
