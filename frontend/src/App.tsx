@@ -1,18 +1,12 @@
-import {Navigate, Route, BrowserRouter as Router, Routes} from "react-router-dom"
-import Login from "./pages/login"
-import Signup from "./pages/signup"
-import MarketPlace from "./pages/marketplace"
+import { RouterProvider } from "react-router-dom";
+import { router } from "./Router";
+import { ThemeProvider } from "@/components/theme-provider"
 function App() {
 
   return ( 
-    <Router>
-      <Routes>
-        <Route path = "/" element={<Navigate to = "/landdetail" />} />
-        <Route path="/Signup" element ={<Signup />} />
-        <Route path = "/Login" element ={<Login />} />
-        <Route path="/Marketplace" element={<MarketPlace />}/>
-      </Routes>
-    </Router>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <RouterProvider router={router}/>
+    </ThemeProvider>
   )
 }
 
