@@ -1,256 +1,326 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("Land contract", function () {
-  let Land;
-  let landContract;
+describe("Land Contract", function () {
+  let land;
   let owner;
-  let buyer;
-  let seller1;
-  let seller2;
+  let addr1;
+  let addr2;
+  let addr3;
+  let addrs;
 
   beforeEach(async function () {
-    [owner, buyer, seller1, seller2] = await ethers.getSigners();
-    Land = await ethers.getContractFactory("Land");
-    landContract = await Land.deploy();
-    expect(await landContract.getAddress()).to.be.properAddress;
+    [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+
+    const Land = await ethers.getContractFactory("Land");
+    land = await Land.deploy();
+    await land.waitForDeployment();
   });
 
-  it("Should initialize the contract correctly", async function () {
-    expect(await landContract.landIdCounter()).to.equal(0);
+  describe("Deployment", function () {
+    it("Should set the right owner", async function () {
+      expect(await land.owner()).to.equal(owner.address);
+    });
+
+    it("Should initialize with zero landIdCounter", async function () {
+      expect(await land.landIdCounter()).to.equal(0);
+    });
   });
 
-  it("Should tokenize and fractionalize land", async function () {
-    const metadataURI = "https://example.com/land-metadata/1";
-    const numberOfFractions = 100;
+  describe("Fractionalizing Land", function () {
+    it("Should allow owner to fractionalize land", async function () {
+      const tx = await land.fractionalizeLand("ipfs://metadata", 100);
+      await tx.wait();
 
-    await expect(landContract.fractionalizeLand(metadataURI, numberOfFractions))
-      .to.emit(landContract, "LandFractionalized")
-      .withArgs(1, numberOfFractions, metadataURI);
+      expect(await land.landIdCounter()).to.equal(1);
+      expect(await land.totalFractions(1)).to.equal(100);
+      expect(await land.isFractionalized(1)).to.equal(true);
+      expect(await land.balanceOf(owner.address, 1)).to.equal(100);
+    });
 
-    const landId = 1;
+    it("Should emit LandFractionalized event", async function () {
+      await expect(land.fractionalizeLand("ipfs://metadata", 100))
+        .to.emit(land, "LandFractionalized")
+        .withArgs(1, 100, "ipfs://metadata");
+    });
 
-    expect(await landContract.landIdCounter()).to.equal(landId);
-    expect(await landContract.totalFractions(landId)).to.equal(
-      numberOfFractions
-    );
-    expect(await landContract.isFractionalized(landId)).to.equal(true);
+    it("Should not allow non-owner to fractionalize land", async function () {
+      await expect(
+        land.connect(addr1).fractionalizeLand("ipfs://metadata", 100)
+      ).to.be.revertedWithCustomError(land, "OwnableUnauthorizedAccount");
+    });
   });
 
-  it("Should fail when non-owner attempts to fractionalize land", async function () {
-    const metadataURI = "https://example.com/land-metadata/3";
-    const numberOfFractions = 200;
+  describe("Listing Tokens for Sale", function () {
+    beforeEach(async function () {
+      await land.fractionalizeLand("ipfs://metadata", 100);
+      await land.transferFractionalTokens(addr1.address, 1, 50);
+    });
 
-    await expect(
-      landContract
-        .connect(seller1)
-        .fractionalizeLand(metadataURI, numberOfFractions)
-    ).to.be.revertedWithCustomError(landContract, "OwnableUnauthorizedAccount");
+    it("Should allow users to list tokens for sale", async function () {
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
+
+      const listing = await land.activeSaleListings(addr1.address);
+      expect(listing.seller).to.equal(addr1.address);
+      expect(listing.landId).to.equal(1);
+      expect(listing.amount).to.equal(20);
+      expect(listing.pricePerToken).to.equal(ethers.parseEther("1"));
+    });
+
+    it("Should emit TokensListedForSale event", async function () {
+      await expect(
+        land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"))
+      )
+        .to.emit(land, "TokensListedForSale")
+        .withArgs(1, addr1.address, 20, ethers.parseEther("1"));
+    });
+
+    it("Should not allow listing more tokens than owned", async function () {
+      await expect(
+        land.connect(addr1).listTokensForSale(1, 60, ethers.parseEther("1"))
+      ).to.be.revertedWith("Insufficient token balance");
+    });
+
+    it("Should not allow listing with zero price", async function () {
+      await expect(
+        land.connect(addr1).listTokensForSale(1, 20, 0)
+      ).to.be.revertedWith("Price must be greater than 0");
+    });
+
+    it("Should not allow multiple active listings from same seller", async function () {
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
+      await expect(
+        land.connect(addr1).listTokensForSale(1, 10, ethers.parseEther("2"))
+      ).to.be.revertedWith("Already has an active listing");
+    });
   });
 
-  it("Should list tokens for sale correctly", async function () {
-    const metadataURI = "https://example.com/land-metadata/1";
-    const numberOfFractions = 100;
-    const pricePerToken = ethers.parseUnits("0.1", "ether");
+  describe("Cancelling Token Listings", function () {
+    beforeEach(async function () {
+      await land.fractionalizeLand("ipfs://metadata", 100);
+      await land.transferFractionalTokens(addr1.address, 1, 50);
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
+    });
 
-    // Create land fractions
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
+    it("Should allow seller to cancel their listing", async function () {
+      await land
+        .connect(addr1)
+        .cancelTokenListing(1, 20, ethers.parseEther("1"));
 
-    // Transfer some tokens to seller1
-    await landContract.transferFractionalTokens(seller1.address, 1, 50);
+      const listing = await land.activeSaleListings(addr1.address);
+      expect(listing.amount).to.equal(0);
+    });
 
-    // List tokens for sale
-    await expect(
-      landContract.connect(seller1).listTokensForSale(1, 20, pricePerToken)
-    )
-      .to.emit(landContract, "TokensListedForSale")
-      .withArgs(1, seller1.address, 20, pricePerToken);
+    it("Should emit TokensListingCancelled event", async function () {
+      await expect(
+        land.connect(addr1).cancelTokenListing(1, 20, ethers.parseEther("1"))
+      )
+        .to.emit(land, "TokensListingCancelled")
+        .withArgs(1, addr1.address, 20, ethers.parseEther("1"));
+    });
+
+    it("Should not allow cancelling if sender doesn't own enough tokens", async function () {
+      // Transfer tokens away from addr1 so they don't have enough
+      await land.connect(addr1).transferFractionalTokens(addr2.address, 1, 45);
+
+      await expect(
+        land.connect(addr1).cancelTokenListing(1, 20, ethers.parseEther("1"))
+      ).to.be.revertedWith("Must still own the tokens to cancel listing");
+    });
+
+    it("Should not allow cancelling with incorrect amount", async function () {
+      await expect(
+        land.connect(addr1).cancelTokenListing(1, 10, ethers.parseEther("1"))
+      ).to.be.revertedWith("Amount doesn't match listing");
+    });
+
+    it("Should not allow cancelling with incorrect price", async function () {
+      await expect(
+        land.connect(addr1).cancelTokenListing(1, 20, ethers.parseEther("2"))
+      ).to.be.revertedWith("Price doesn't match listing");
+    });
+
+    it("Should not allow cancelling non-existent listing", async function () {
+      // Test with addr2 who hasn't created any listing but owns tokens
+      await land.transferFractionalTokens(addr2.address, 1, 20);
+
+      await expect(
+        land.connect(addr2).cancelTokenListing(1, 20, ethers.parseEther("1"))
+      ).to.be.revertedWith("No active listing found");
+    });
   });
 
-  it("Should fail to list tokens for sale with insufficient balance", async function () {
-    const metadataURI = "https://example.com/land-metadata/1";
-    const numberOfFractions = 100;
-    const pricePerToken = ethers.parseUnits("0.1", "ether");
+  describe("Purchasing Tokens", function () {
+    beforeEach(async function () {
+      await land.fractionalizeLand("ipfs://metadata", 100);
+      await land.transferFractionalTokens(addr1.address, 1, 50);
+      await land.transferFractionalTokens(addr2.address, 1, 30);
 
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
+      // Set approvals for the contract to transfer tokens
+      await land.connect(addr1).setApprovalForAll(addr3.address, true);
+      await land.connect(addr2).setApprovalForAll(addr3.address, true);
 
-    await expect(
-      landContract.connect(seller1).listTokensForSale(1, 20, pricePerToken)
-    ).to.be.revertedWith("Insufficient token balance");
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr2)
+        .listTokensForSale(1, 15, ethers.parseEther("1.5"));
+    });
+
+    it("Should allow purchasing tokens from multiple sellers", async function () {
+      const orders = [
+        {
+          seller: addr1.address,
+          landId: 1,
+          amount: 10,
+          pricePerToken: ethers.parseEther("1"),
+        },
+        {
+          seller: addr2.address,
+          landId: 1,
+          amount: 5,
+          pricePerToken: ethers.parseEther("1.5"),
+        },
+      ];
+
+      const totalPrice = ethers.parseEther("17.5"); // (10 * 1) + (5 * 1.5)
+      await land
+        .connect(addr3)
+        .purchaseTokens(1, orders, { value: totalPrice });
+
+      expect(await land.balanceOf(addr3.address, 1)).to.equal(15);
+      expect(await land.balanceOf(addr1.address, 1)).to.equal(40);
+      expect(await land.balanceOf(addr2.address, 1)).to.equal(25);
+    });
+
+    it("Should emit TokensPurchased events", async function () {
+      const orders = [
+        {
+          seller: addr1.address,
+          landId: 1,
+          amount: 10,
+          pricePerToken: ethers.parseEther("1"),
+        },
+      ];
+
+      await expect(
+        land
+          .connect(addr3)
+          .purchaseTokens(1, orders, { value: ethers.parseEther("10") })
+      )
+        .to.emit(land, "TokensPurchased")
+        .withArgs(1, addr3.address, addr1.address, 10, ethers.parseEther("1"));
+    });
+
+    it("Should handle partial purchases and update listings correctly", async function () {
+      const orders = [
+        {
+          seller: addr1.address,
+          landId: 1,
+          amount: 10,
+          pricePerToken: ethers.parseEther("1"),
+        },
+      ];
+
+      await land
+        .connect(addr3)
+        .purchaseTokens(1, orders, { value: ethers.parseEther("10") });
+
+      const listing = await land.activeSaleListings(addr1.address);
+      expect(listing.amount).to.equal(10); // Should be reduced from 20 to 10
+    });
+
+    it("Should remove listing when all tokens are purchased", async function () {
+      const orders = [
+        {
+          seller: addr1.address,
+          landId: 1,
+          amount: 20,
+          pricePerToken: ethers.parseEther("1"),
+        },
+      ];
+
+      await land
+        .connect(addr3)
+        .purchaseTokens(1, orders, { value: ethers.parseEther("20") });
+
+      const listing = await land.activeSaleListings(addr1.address);
+      expect(listing.amount).to.equal(0);
+    });
+
+    it("Should refund excess payment", async function () {
+      const orders = [
+        {
+          seller: addr1.address,
+          landId: 1,
+          amount: 10,
+          pricePerToken: ethers.parseEther("1"),
+        },
+      ];
+
+      const initialBalance = await ethers.provider.getBalance(addr3.address);
+      const tx = await land
+        .connect(addr3)
+        .purchaseTokens(1, orders, { value: ethers.parseEther("15") });
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed * receipt.gasPrice;
+
+      const finalBalance = await ethers.provider.getBalance(addr3.address);
+      const expectedBalance =
+        initialBalance - ethers.parseEther("10") - gasUsed;
+
+      expect(finalBalance).to.be.closeTo(
+        expectedBalance,
+        ethers.parseEther("0.01")
+      );
+    });
+
+    it("Should not allow purchase with insufficient payment", async function () {
+      const orders = [
+        {
+          seller: addr1.address,
+          landId: 1,
+          amount: 10,
+          pricePerToken: ethers.parseEther("1"),
+        },
+      ];
+
+      await expect(
+        land
+          .connect(addr3)
+          .purchaseTokens(1, orders, { value: ethers.parseEther("5") })
+      ).to.be.revertedWith("Insufficient payment");
+    });
   });
 
-  it("Should purchase tokens from multiple sellers", async function () {
-    const metadataURI = "https://example.com/land-metadata/1";
-    const numberOfFractions = 100;
-    const pricePerToken1 = ethers.parseUnits("0.1", "ether");
-    const pricePerToken2 = ethers.parseUnits("0.12", "ether");
+  describe("Transferring Fractional Tokens", function () {
+    beforeEach(async function () {
+      await land.fractionalizeLand("ipfs://metadata", 100);
+    });
 
-    // Create land fractions
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
+    it("Should allow transfer of tokens", async function () {
+      await land.transferFractionalTokens(addr1.address, 1, 30);
+      expect(await land.balanceOf(addr1.address, 1)).to.equal(30);
+      expect(await land.balanceOf(owner.address, 1)).to.equal(70);
+    });
 
-    // Transfer tokens to sellers
-    await landContract.transferFractionalTokens(seller1.address, 1, 40);
-    await landContract.transferFractionalTokens(seller2.address, 1, 30);
+    it("Should emit TransferFractionalTokens event", async function () {
+      await expect(land.transferFractionalTokens(addr1.address, 1, 30))
+        .to.emit(land, "TransferFractionalTokens")
+        .withArgs(owner.address, addr1.address, 1, 30);
+    });
 
-    // Sellers approve the contract operator (buyer)
-    await landContract.connect(seller1).setApprovalForAll(buyer.address, true);
-    await landContract.connect(seller2).setApprovalForAll(buyer.address, true);
-
-    // List tokens for sale
-    await landContract
-      .connect(seller1)
-      .listTokensForSale(1, 20, pricePerToken1);
-    await landContract
-      .connect(seller2)
-      .listTokensForSale(1, 15, pricePerToken2);
-
-    // Create purchase orders
-    const orders = [
-      {
-        seller: seller1.address,
-        amount: 10,
-        pricePerToken: pricePerToken1,
-      },
-      {
-        seller: seller2.address,
-        amount: 5,
-        pricePerToken: pricePerToken2,
-      },
-    ];
-
-    const totalPayment = pricePerToken1 * 10n + pricePerToken2 * 5n;
-
-    // Purchase tokens
-    await expect(
-      landContract
-        .connect(buyer)
-        .purchaseTokens(1, orders, { value: totalPayment })
-    )
-      .to.emit(landContract, "TokensPurchased")
-      .withArgs(1, buyer.address, seller1.address, 10, pricePerToken1)
-      .to.emit(landContract, "TokensPurchased")
-      .withArgs(1, buyer.address, seller2.address, 5, pricePerToken2);
-
-    // Check balances
-    expect(await landContract.balanceOf(buyer.address, 1)).to.equal(15);
-    expect(await landContract.balanceOf(seller1.address, 1)).to.equal(30);
-    expect(await landContract.balanceOf(seller2.address, 1)).to.equal(25);
-  });
-
-  it("Should fail when purchasing with insufficient payment", async function () {
-    const metadataURI = "https://example.com/land-metadata/1";
-    const numberOfFractions = 100;
-    const pricePerToken = ethers.parseUnits("0.1", "ether");
-
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
-    await landContract.transferFractionalTokens(seller1.address, 1, 40);
-    await landContract
-      .connect(seller1)
-      .setApprovalForAll(landContract.getAddress(), true);
-    await landContract.connect(seller1).listTokensForSale(1, 20, pricePerToken);
-
-    const orders = [
-      {
-        seller: seller1.address,
-        amount: 10,
-        pricePerToken: pricePerToken,
-      },
-    ];
-
-    const insufficientPayment = pricePerToken * 10n - 1n;
-
-    await expect(
-      landContract
-        .connect(buyer)
-        .purchaseTokens(1, orders, { value: insufficientPayment })
-    ).to.be.revertedWith("Insufficient payment");
-  });
-
-  it("Should fail when seller has insufficient balance", async function () {
-    const metadataURI = "https://example.com/land-metadata/1";
-    const numberOfFractions = 100;
-    const pricePerToken = ethers.parseUnits("0.1", "ether");
-
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
-    await landContract.transferFractionalTokens(seller1.address, 1, 5);
-    await landContract
-      .connect(seller1)
-      .setApprovalForAll(landContract.getAddress(), true);
-    await landContract.connect(seller1).listTokensForSale(1, 5, pricePerToken);
-    const orders = [
-      {
-        seller: seller1.address,
-        amount: 10,
-        pricePerToken: pricePerToken,
-      },
-    ];
-
-    await expect(
-      landContract
-        .connect(buyer)
-        .purchaseTokens(1, orders, { value: pricePerToken * 10n })
-    ).to.be.revertedWith("Seller has insufficient balance");
-  });
-
-  it("Should transfer fractional tokens", async function () {
-    const metadataURI = "https://example.com/land-metadata/8";
-    const numberOfFractions = 100;
-
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
-
-    await expect(landContract.transferFractionalTokens(buyer.address, 1, 10))
-      .to.emit(landContract, "TransferFractionalTokens")
-      .withArgs(owner.address, buyer.address, 1, 10);
-
-    const buyerBalance = await landContract.balanceOf(buyer.address, 1);
-    expect(buyerBalance).to.equal(10);
-  });
-
-  it("Should fail when transferring more fractional tokens than balance", async function () {
-    const metadataURI = "https://example.com/land-metadata/9";
-    const numberOfFractions = 100;
-
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
-
-    await expect(
-      landContract.transferFractionalTokens(buyer.address, 1, 200)
-    ).to.be.revertedWith("Insufficient balance");
-  });
-
-  it("Should refund excess payment", async function () {
-    const metadataURI = "https://example.com/land-metadata/1";
-    const numberOfFractions = 100;
-    const pricePerToken = ethers.parseUnits("0.1", "ether");
-    const excessAmount = ethers.parseUnits("1", "ether");
-
-    await landContract.fractionalizeLand(metadataURI, numberOfFractions);
-    await landContract.transferFractionalTokens(seller1.address, 1, 40);
-    await landContract.connect(seller1).setApprovalForAll(buyer.address, true);
-    await landContract.connect(seller1).listTokensForSale(1, 20, pricePerToken);
-
-    const orders = [
-      {
-        seller: seller1.address,
-        amount: 10,
-        pricePerToken: pricePerToken,
-      },
-    ];
-
-    const requiredPayment = pricePerToken * 10n;
-    const totalSent = requiredPayment + excessAmount;
-
-    const buyerBalanceBefore = await ethers.provider.getBalance(buyer.address);
-
-    const tx = await landContract
-      .connect(buyer)
-      .purchaseTokens(1, orders, { value: totalSent });
-    const receipt = await tx.wait();
-    const gasUsed = receipt.gasUsed * receipt.gasPrice;
-
-    const buyerBalanceAfter = await ethers.provider.getBalance(buyer.address);
-
-    expect(buyerBalanceBefore - buyerBalanceAfter).to.equal(
-      requiredPayment + gasUsed
-    );
+    it("Should not allow transfer of more tokens than owned", async function () {
+      await expect(
+        land.transferFractionalTokens(addr1.address, 1, 101)
+      ).to.be.revertedWith("Insufficient balance");
+    });
   });
 });

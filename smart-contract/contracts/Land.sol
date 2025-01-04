@@ -10,10 +10,14 @@ contract Land is ERC1155, Ownable {
     mapping(uint256 => uint256) public totalFractions;
     mapping(uint256 => bool) public isFractionalized;
 
+    // New mapping to track sale listings
+    mapping(address => SaleOrder) public activeSaleListings;
+
     constructor() Ownable(msg.sender) ERC1155("") {}
 
     struct SaleOrder {
         address seller;
+        uint256 landId;
         uint256 amount;
         uint256 pricePerToken;
     }
@@ -46,6 +50,13 @@ contract Land is ERC1155, Ownable {
         uint256 pricePerToken
     );
 
+    event TokensListingCancelled(
+        uint256 indexed landId,
+        address indexed seller,
+        uint256 amount,
+        uint256 pricePerToken
+    );
+
     function fractionalizeLand(
         string memory metadataURI,
         uint256 numberOfFractions
@@ -72,8 +83,47 @@ contract Land is ERC1155, Ownable {
             "Insufficient token balance"
         );
         require(pricePerToken > 0, "Price must be greater than 0");
+        require(
+            activeSaleListings[msg.sender].amount == 0,
+            "Already has an active listing"
+        );
+
+        // Create and store the sale listing
+        activeSaleListings[msg.sender] = SaleOrder({
+            seller: msg.sender,
+            landId: landId,
+            amount: amount,
+            pricePerToken: pricePerToken
+        });
 
         emit TokensListedForSale(landId, msg.sender, amount, pricePerToken);
+    }
+
+    function cancelTokenListing(
+        uint256 landId,
+        uint256 amount,
+        uint256 pricePerToken
+    ) public {
+        require(isFractionalized[landId], "Land must be fractionalized first");
+        require(
+            balanceOf(msg.sender, landId) >= amount,
+            "Must still own the tokens to cancel listing"
+        );
+
+        // Verify the listing exists and matches the parameters
+        SaleOrder memory listing = activeSaleListings[msg.sender];
+        require(listing.amount > 0, "No active listing found");
+        require(listing.landId == landId, "Land ID doesn't match listing");
+        require(listing.amount == amount, "Amount doesn't match listing");
+        require(
+            listing.pricePerToken == pricePerToken,
+            "Price doesn't match listing"
+        );
+
+        // Remove the listing
+        delete activeSaleListings[msg.sender];
+
+        emit TokensListingCancelled(landId, msg.sender, amount, pricePerToken);
     }
 
     function purchaseTokens(
@@ -87,8 +137,23 @@ contract Land is ERC1155, Ownable {
 
         // Calculate total amount and price
         for (uint256 i = 0; i < orders.length; i++) {
+            address seller = orders[i].seller;
+
+            // Verify the seller has an active listing that matches the order
+            SaleOrder memory listing = activeSaleListings[seller];
+            require(listing.amount > 0, "Seller has no active listing");
+            require(listing.landId == landId, "Land ID doesn't match listing");
             require(
-                balanceOf(orders[i].seller, landId) >= orders[i].amount,
+                listing.amount >= orders[i].amount,
+                "Order amount exceeds listing"
+            );
+            require(
+                listing.pricePerToken == orders[i].pricePerToken,
+                "Price doesn't match listing"
+            );
+
+            require(
+                balanceOf(seller, landId) >= orders[i].amount,
                 "Seller has insufficient balance"
             );
 
@@ -101,24 +166,29 @@ contract Land is ERC1155, Ownable {
         // Process transfers
         for (uint256 i = 0; i < orders.length; i++) {
             SaleOrder memory order = orders[i];
+            address seller = order.seller;
 
             // Transfer tokens from seller to buyer
-            safeTransferFrom(
-                order.seller,
-                msg.sender,
-                landId,
-                order.amount,
-                ""
-            );
+            safeTransferFrom(seller, msg.sender, landId, order.amount, "");
 
             // Transfer payment to seller
             uint256 payment = order.amount * order.pricePerToken;
-            payable(order.seller).transfer(payment);
+            payable(seller).transfer(payment);
+
+            // Update or remove the listing
+            SaleOrder storage listing = activeSaleListings[seller];
+            if (listing.amount == order.amount) {
+                // If entire listing is purchased, remove it
+                delete activeSaleListings[seller];
+            } else {
+                // If partial purchase, update the listing amount
+                listing.amount -= order.amount;
+            }
 
             emit TokensPurchased(
                 landId,
                 msg.sender,
-                order.seller,
+                seller,
                 order.amount,
                 order.pricePerToken
             );
