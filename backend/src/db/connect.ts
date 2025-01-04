@@ -1,33 +1,36 @@
+// db.ts
 import { MongoClient, ServerApiVersion } from "mongodb";
 import dotenv from "dotenv";
+
 dotenv.config();
-const uri = process.env.MONGO_URI!;
 
-const mongoClient = (uri: string) => {
-  if (!uri) {
-    throw new Error("MongoDB URI must be provided");
-  }
+let client: MongoClient | null = null;
 
-  return new MongoClient(uri, {
-    serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true,
-    },
-  });
-};
+async function connect(): Promise<void> {
+  if (!client) {
+    const uri = process.env.MONGO_URI;
+    if (!uri) {
+      throw new Error("MongoDB URI must be provided");
+    }
 
-const client = mongoClient(uri);
+    client = new MongoClient(uri, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      },
+    });
 
-async function connect() {
-  try {
     await client.connect();
-    await client.db("admin").command({ ping: 1 });
     console.log("Connected to MongoDB!");
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-    throw error; // Re-throw error for handling in main app
   }
 }
 
-export { client, connect };
+function getClient(): MongoClient {
+  if (!client) {
+    throw new Error("MongoDB client is not connected");
+  }
+  return client;
+}
+
+export { connect, getClient };
