@@ -11,6 +11,8 @@ import { ScrollArea } from "../components/ui/scroll-area";
 // import { Separator } from "../components/ui/separator"
 import { ScrollBar } from "../components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
+import { Link } from "react-router-dom";
+// import { Plus } from "lucide-react";
 
 // import { Button } from "../components/ui/button";
 // import { cn } from '../lib/utils';
@@ -55,28 +57,128 @@ const MarketPlace = () => {
   ];
 
   const tokensListWeekly = [
-    { area: "Baneshwor", city: "Kathmandu", price: "21222", noOfTokens: "20" },
-    { area: "Lazimpath", city: "Kathmandu", price: "49999", noOfTokens: "30" },
-    { area: "Gairidhara", city: "Kathmandu", price: "42345", noOfTokens: "20" },
-    { area: "Bagbazaar", city: "Kathmandu", price: "32111", noOfTokens: "10" },
-    { area: "Baneshwor", city: "Kathmandu", price: "21222", noOfTokens: "20" },
-    { area: "Lazimpath", city: "Kathmandu", price: "49999", noOfTokens: "30" },
-    { area: "Gairidhara", city: "Kathmandu", price: "42345", noOfTokens: "20" },
-    { area: "Bagbazaar", city: "Kathmandu", price: "32111", noOfTokens: "10" },
-    { area: "Baneshwor", city: "Kathmandu", price: "21222", noOfTokens: "20" },
-    { area: "Lazimpath", city: "Kathmandu", price: "49999", noOfTokens: "30" },
-    { area: "Gairidhara", city: "Kathmandu", price: "42345", noOfTokens: "20" },
-    { area: "Bagbazaar", city: "Kathmandu", price: "32111", noOfTokens: "10" },
-    { area: "Baneshwor", city: "Kathmandu", price: "21222", noOfTokens: "20" },
-    { area: "Lazimpath", city: "Kathmandu", price: "49999", noOfTokens: "30" },
-    { area: "Gairidhara", city: "Kathmandu", price: "42345", noOfTokens: "20" },
-    { area: "Bagbazaar", city: "Kathmandu", price: "32111", noOfTokens: "10" },
+    {
+      area: "Baneshwor",
+      city: "Kathmandu",
+      price: "21222",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Lazimpath",
+      city: "Kathmandu",
+      price: "49999",
+      noOfTokens: "30",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Gairidhara",
+      city: "Kathmandu",
+      price: "42345",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Bagbazaar",
+      city: "Kathmandu",
+      price: "32111",
+      noOfTokens: "10",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Baneshwor",
+      city: "Kathmandu",
+      price: "21222",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Lazimpath",
+      city: "Kathmandu",
+      price: "49999",
+      noOfTokens: "30",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Gairidhara",
+      city: "Kathmandu",
+      price: "42345",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Bagbazaar",
+      city: "Kathmandu",
+      price: "32111",
+      noOfTokens: "10",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Baneshwor",
+      city: "Kathmandu",
+      price: "21222",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Lazimpath",
+      city: "Kathmandu",
+      price: "49999",
+      noOfTokens: "30",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Gairidhara",
+      city: "Kathmandu",
+      price: "42345",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Bagbazaar",
+      city: "Kathmandu",
+      price: "32111",
+      noOfTokens: "10",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Baneshwor",
+      city: "Kathmandu",
+      price: "21222",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Lazimpath",
+      city: "Kathmandu",
+      price: "49999",
+      noOfTokens: "30",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Gairidhara",
+      city: "Kathmandu",
+      price: "42345",
+      noOfTokens: "20",
+      percentageIncrease: "10%",
+    },
+    {
+      area: "Bagbazaar",
+      city: "Kathmandu",
+      price: "32111",
+      noOfTokens: "10",
+      percentageIncrease: "10%",
+    },
   ];
 
   return (
-    <div className=" h-screen w-auto justify-center flex flex-col items-center ">
-      <div className=" flex flex-row w-[90%] space-x-4 pl-9">
-        <Input placeholder="Location" className=" h-full " />
+    <div className=" h-screen w-auto justify-center flex flex-col gap-8 pr-4">
+      <h1 className="text-4xl font-bold dark:text-white pl-8">Marketplace</h1>
+      <div className=" flex flex-row w-[99%] space-x-4 pl-9">
+        <Input
+          placeholder="Location"
+          className="dark:border-white/10 h-full "
+        />
         <Popover>
           <PopoverTrigger>Filter</PopoverTrigger>
           <PopoverContent className=" bg-black text-white  h-full ">
@@ -103,18 +205,24 @@ const MarketPlace = () => {
             </div>
           </PopoverContent>
         </Popover>
-        <Button className="h-full">Search</Button>
+        <Button className="h-full dark:bg-green-700 dark:text-white">
+          Search
+        </Button>
       </div>
-      <div className="flex flex-col p-5 w-[90%] space-x-4  ">
-        <h1 className="text-2xl font-semibold mx-4">Recently Added</h1>
-        <ScrollArea className=" h-52 w-full rounded-md border ">
-          <div className="flex gap-4 mx-4 mt-2">
+      <div className="flex flex-col p-5 w-[99%] space-x-4  ">
+        <h1 className="text-xl font-semibold mx-4 py-2">Recently Added</h1>
+        <ScrollArea className="h-full w-full rounded-md pb-3">
+          <div className="flex gap-4 mt-2  ">
             {tokensListRecent.map((tokensList, tnt) => (
-              <div
-                className="flex flex-col h-full w-72 p-5 bg-gray-600  rounded-2xl gap-3 "
+              <Link
+                to={"/land-detail/" + tnt}
+                className="h-full w-60 px-5 pb-2 bg-green-900/40 rounded-xl"
                 key={tnt}
               >
-                <div className="flex justify-between py-2 bg-[#212121] mb-2 px-2 rounded-xl ">
+                <p className=" font-semibold text-white text-center mt-1">
+                  {tokensList.area}, {tokensList.city}
+                </p>
+                <div className="flex justify-between py-2 bg-green-900 my-2 -mx-5 px-5 ">
                   <Avatar>
                     <AvatarImage src="https://github.com/shadcn.png" />
                     <AvatarFallback>MA</AvatarFallback>
@@ -123,27 +231,31 @@ const MarketPlace = () => {
                     {tokensList.noOfTokens} Tokens
                   </p>
                 </div>
-                <p className=" font-semibold text-gray-900  ">
-                  {tokensList.area}, {tokensList.city}
+
+                <p className="font-semibold text-xl text-right">
+                  Rs. {tokensList.price}
                 </p>
-                <p className="font-semibold text-2xl">Rs. {tokensList.price}</p>
-              </div>
+              </Link>
             ))}
           </div>
           {/* <text>afhgiasf</text> */}
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
-      <div className="flex flex-col p-5 w-[90%] space-x-4  ">
-        <h1 className="text-2xl font-semibold mx-4">Popular This Week</h1>
-        <ScrollArea className=" h-52 w-full rounded-md border ">
-          <div className="flex gap-4 mx-4 mt-2">
+      <div className="flex flex-col p-5 w-[99%] space-x-4  ">
+        <h1 className="text-xl font-semibold mx-4 py-2">Popular This Week</h1>
+        <ScrollArea className="h-full w-full rounded-md pb-3">
+          <div className="flex gap-4 mt-2  ">
             {tokensListWeekly.map((tokensList, tnt) => (
-              <div
-                className="flex flex-col h-full w-72 p-5 bg-gray-600  rounded-2xl gap-3 "
+              <Link
+                to={"/land-detail/" + tnt}
+                className="h-full w-60 px-5 bg-green-900/40 rounded-xl"
                 key={tnt}
               >
-                <div className="flex justify-between py-2 bg-[#212121] mb-2 px-2 rounded-xl ">
+                <p className=" font-semibold text-white text-center mt-2">
+                  {tokensList.area}, {tokensList.city}
+                </p>
+                <div className="flex justify-between py-2 bg-green-900 mt-3 mb-2 -mx-5 px-5 ">
                   <Avatar>
                     <AvatarImage src="https://github.com/shadcn.png" />
                     <AvatarFallback>MA</AvatarFallback>
@@ -152,11 +264,17 @@ const MarketPlace = () => {
                     {tokensList.noOfTokens} Tokens
                   </p>
                 </div>
-                <p className=" font-semibold text-gray-900  ">
-                  {tokensList.area}, {tokensList.city}
+
+                <p className="font-semibold text-xl text-right mb-2">
+                  Rs. {tokensList.price}
                 </p>
-                <p className="font-semibold text-2xl">Rs. {tokensList.price}</p>
-              </div>
+                <p className=" text-lg text-center bg-white/90 -mx-5 text-green-900 px-5 py-2 rounded-b-xl">
+                  Increased by{" "}
+                  <span className="font-bold text-green-700">
+                    {tokensList.percentageIncrease}
+                  </span>{" "}
+                </p>
+              </Link>
             ))}
           </div>
           {/* <text>afhgiasf</text> */}
