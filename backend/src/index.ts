@@ -1,8 +1,6 @@
 import express, { Express, NextFunction, Request, Response } from "express";
-import dotenv from "dotenv";
 const cors = require("cors");
-import mongoClient from "./db/connect";
-dotenv.config();
+import { client, connect } from "./db/connect"; // Import the connected client
 import { UserModel } from "./models/User";
 import { DailyTokenModel } from "./models/DailyToken";
 import { sign } from "jsonwebtoken";
@@ -13,31 +11,33 @@ const uri = process.env.MONGO_URI!;
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
+
+// console.log(process.env.RPC_URL, process.env.PRIVATE_KEY);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+connect().catch(console.error);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello Server");
 });
 
-async function run() {
-  try {
-    await client.connect();
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
-  } finally {
-    await client.close();
-  }
-}
-run().catch(console.dir);
+// async function run() {
+//   try {
+//     await client.db("admin").command({ ping: 1 });
+//     console.log(
+//       "Pinged your deployment. You successfully connected to MongoDB!"
+//     );
+//   } finally {
+//     await client.close();
+//   }
+// }
+// run().catch(console.dir);
 
 app.get("/api/daily_tokens", async (req: Request, res: Response) => {
   try {
-    await client.connect();
-
     const database = client.db("terra_tokens");
     const collection = database.collection("daily_tokens");
 
@@ -52,8 +52,6 @@ app.get("/api/daily_tokens", async (req: Request, res: Response) => {
 
 app.get("/api/land_tokens", async (req: Request, res: Response) => {
   try {
-    await client.connect();
-
     const database = client.db("terra_tokens");
     const collection = database.collection("land_tokens");
 
@@ -68,8 +66,6 @@ app.get("/api/land_tokens", async (req: Request, res: Response) => {
 
 app.get("/api/tokens_for_sale", async (req: Request, res: Response) => {
   try {
-    await client.connect();
-
     const database = client.db("terra_tokens");
     const collection = database.collection("tokens_for_sale");
 
@@ -82,10 +78,54 @@ app.get("/api/tokens_for_sale", async (req: Request, res: Response) => {
   }
 });
 
+app.post("/api/sell_tokens", async (req: Request, res: any) => {
+  try {
+    const { seller, land_hash, price, number_of_tokens } = req.body;
+
+    // Validate input
+    if (!seller || !land_hash || !price || !number_of_tokens) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const database = client.db("terra_tokens");
+    const tokensCollection = database.collection("tokens_for_sale");
+    const usersCollection = database.collection("user");
+
+    // Create a new token object
+    const newToken = {
+      seller,
+      land_hash,
+      price,
+      number_of_tokens,
+      numbers_sold: 0, // Default value
+    };
+
+    // Insert the new token into tokens_for_sale collection
+    const result = await tokensCollection.insertOne(newToken);
+
+    // Update the user's current_tokens array
+    const updateResult = await usersCollection.updateOne(
+      { user_public_key: seller, "current_tokens.hash": land_hash },
+      { $inc: { "current_tokens.$.quantity": -number_of_tokens } }
+    );
+
+    // Check if user was found and updated
+    if (updateResult.modifiedCount === 0) {
+      return res
+        .status(400)
+        .json({ message: "User not found or insufficient tokens" });
+    }
+
+    // Respond with the inserted token details
+    res.status(201).json({ id: result.insertedId, ...newToken });
+  } catch (error) {
+    console.error("Error saving token or updating user:", error);
+    res.status(500).send("Internal server error");
+  }
+});
+
 app.get("/api/tokens_purchased", async (req: Request, res: Response) => {
   try {
-    await client.connect();
-
     const database = client.db("terra_tokens");
     const collection = database.collection("tokens_purchased");
 
@@ -100,8 +140,6 @@ app.get("/api/tokens_purchased", async (req: Request, res: Response) => {
 
 app.get("/api/users", async (req: Request, res: Response) => {
   try {
-    await client.connect();
-
     const database = client.db("terra_tokens");
     const collection = database.collection("user");
 
@@ -122,7 +160,6 @@ app.post("/api/check-user", async (req: any, res: any) => {
   }
 
   try {
-    await client.connect();
     const database = client.db("terra_tokens");
     const collection = database.collection("user");
     const user = await collection.findOne({ user_public_key });
@@ -158,7 +195,6 @@ app.post("/api/check-user", async (req: any, res: any) => {
 
 app.get("/api/top-lands", async (req: Request, res: Response) => {
   try {
-    await client.connect();
     const result = await client
       .db("terra_tokens")
       .collection("daily_tokens")
@@ -223,7 +259,6 @@ app.get("/api/top-lands", async (req: Request, res: Response) => {
 
 app.get("/api/recent-lands", async (req: Request, res: Response) => {
   try {
-    await client.connect();
     const result = await client
       .db("terra_tokens")
       .collection("land_tokens")
@@ -247,7 +282,6 @@ app.get("/api/land_tokens/:token", async (req: Request, res: any) => {
   }
 
   try {
-    await client.connect();
     const landDetail = await client
       .db("terra_tokens")
       .collection("land_tokens")
@@ -275,7 +309,6 @@ app.get("/api/land_tokens/:token/prices", async (req: Request, res: any) => {
   last7Days.setDate(today.getDate() - 7);
 
   try {
-    await client.connect();
     const prices = await client
       .db("terra_tokens")
       .collection("daily_tokens")
@@ -302,7 +335,6 @@ app.get("/api/land_tokens/:token/prices", async (req: Request, res: any) => {
 app.post("/api/add-user", async (req: Request, res: any) => {
   const { user_public_key, username, email, phone_number } = req.body;
 
-  // Validate input
   if (!user_public_key || !username || !email || !phone_number) {
     return res.status(400).json({
       message:
@@ -310,7 +342,6 @@ app.post("/api/add-user", async (req: Request, res: any) => {
     });
   }
 
-  // Create the new user object
   const newUser = {
     user_public_key,
     username,
@@ -320,7 +351,6 @@ app.post("/api/add-user", async (req: Request, res: any) => {
   };
 
   try {
-    await client.connect();
     const result = await client
       .db("terra_tokens")
       .collection("user")
@@ -344,8 +374,6 @@ app.post("/api/holding-status", async (req: Request, res: any) => {
   }
 
   try {
-    await client.connect();
-
     const database = client.db("terra_tokens");
     const userCollection = database.collection("user");
     const dailyTokenCollection = database.collection("daily_tokens");
@@ -396,6 +424,61 @@ app.post("/api/holding-status", async (req: Request, res: any) => {
     res.status(500).json({ message: "Error fetching holding status" });
   } finally {
     await client.close();
+  }
+});
+
+app.post("/api/buy_tokens", async (req: Request, res: any) => {
+  try {
+    const { buyer, land_hash, price, number_of_tokens, whose } = req.body;
+
+    if (!buyer || !land_hash || !price || !number_of_tokens || !whose) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const database = client.db("terra_tokens");
+    const tokensPurchasedCollection = database.collection("tokens_purchased");
+    const tokensForSaleCollection = database.collection("tokens_for_sale");
+    const usersCollection = database.collection("users");
+
+    const purchaseRecord = {
+      buyer,
+      land_hash,
+      price,
+      number_of_tokens,
+    };
+
+    await tokensPurchasedCollection.insertOne(purchaseRecord);
+
+    await tokensForSaleCollection.updateOne(
+      { seller: whose, land_hash },
+      { $inc: { number_sold: number_of_tokens } }
+    );
+
+    const userUpdateResult = await usersCollection.updateOne(
+      { user_public_key: buyer, "current_tokens.hash": land_hash },
+      { $inc: { "current_tokens.$.quantity": number_of_tokens } }
+    );
+
+    if (userUpdateResult.modifiedCount === 0) {
+      await usersCollection.updateOne(
+        { user_public_key: buyer },
+        {
+          $addToSet: {
+            current_tokens: {
+              hash: land_hash,
+              quantity: number_of_tokens,
+            },
+          },
+        }
+      );
+    }
+
+    res
+      .status(201)
+      .json({ message: "Tokens purchased successfully", purchaseRecord });
+  } catch (error) {
+    console.error("Error processing token purchase:", error);
+    res.status(500).send("Internal server error");
   }
 });
 
