@@ -13,6 +13,9 @@ import {
   FormMessage,
 } from "../components/ui/form"
 import { Input } from "../components/ui/input"
+import logoSignup from "../assets/logo-placeholder-image.png"
+// const pageHeight = window.innerHeight;
+// const pageWidth = window.innerWidth;
 
 const formSchema = z.object({
   name: z.string().min(2).max(80),
@@ -34,17 +37,18 @@ const Signup= ()=>{
   }
 
     return(
-        <div className="flex flex-col bg-[black] justify-center items-center" >
-        <div  >
-            <h1>Signup</h1>
-             <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="flex flex-col   justify-center items-center h-screen w-screen " >
+            <h1 className="mb-8">Signup</h1>
+        <div  className=" items-center bg-[black] flex justify-center flex-col  w-1/3  rounded-3xl pt-10 pb-5 ">
+        <img src={logoSignup} className=" w-full h-24 object-contain " />
+             <Form {...form}  >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full px-10 py-5">
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Hame</FormLabel>
+              <FormLabel>Name</FormLabel>
               <FormControl>
                 <Input placeholder="Name" {...field} />
               </FormControl>
@@ -78,7 +82,7 @@ const Signup= ()=>{
             </FormItem>
           )}
         />
-        <Button type="submit">Submit</Button>
+        <Button type="submit" className="bg-[gray]" >Submit</Button>
       </form>
     </Form>
         </div>
