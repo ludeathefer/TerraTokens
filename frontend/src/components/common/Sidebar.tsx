@@ -70,7 +70,12 @@ export const Sidebar: FC<SidebarProps> = ({
   activePage,
 }) => {
   return (
-    <div className={cn("pb-12 border-r border-white/10", className)}>
+    <div
+      className={cn(
+        "pb-12 bg-green-900/20 border-r border-white/10",
+        className
+      )}
+    >
       <div className="space-y-4 py-4 min-w-20">
         <div className="px-4 py-2">
           <div
