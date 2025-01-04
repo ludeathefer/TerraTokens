@@ -4,6 +4,7 @@ const cors = require("cors");
 import mongoClient from "./db/connect";
 dotenv.config();
 import { UserModel } from "./models/User";
+import { DailyTokenModel } from "./models/DailyToken";
 
 const uri = process.env.MONGO_URI!;
 
@@ -277,6 +278,106 @@ app.get("/api/land_tokens/:token/prices", async (req: Request, res: any) => {
   } catch (error) {
     console.error("Error fetching price data:", error);
     return res.status(500).json({ message: "Error fetching price data" });
+  }
+});
+
+app.post("/api/add-user", async (req: Request, res: any) => {
+  const { user_public_key, username, email, phone_number } = req.body;
+
+  // Validate input
+  if (!user_public_key || !username || !email || !phone_number) {
+    return res.status(400).json({
+      message:
+        "All fields are required: user_public_key, username, email, and phone_number",
+    });
+  }
+
+  // Create the new user object
+  const newUser = {
+    user_public_key,
+    username,
+    email,
+    phone_number,
+    current_tokens: [],
+  };
+
+  try {
+    await client.connect();
+    const result = await client
+      .db("terra_tokens")
+      .collection("user")
+      .insertOne(newUser);
+
+    res.status(201).json({
+      message: "User created successfully",
+      userId: result.insertedId,
+    });
+  } catch (error) {
+    console.error("Error adding new user:", error);
+    res.status(500).json({ message: "Error adding new user" });
+  }
+});
+
+app.post("/api/holding-status", async (req: Request, res: any) => {
+  const { user_public_key }: { user_public_key: string } = req.body;
+
+  if (!user_public_key) {
+    return res.status(400).json({ message: "User public key is required" });
+  }
+
+  try {
+    await client.connect();
+
+    const database = client.db("terra_tokens");
+    const userCollection = database.collection("user");
+    const dailyTokenCollection = database.collection("daily_tokens");
+
+    const user = await userCollection.findOne({ user_public_key });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const currentTokens = user.current_tokens;
+
+    if (currentTokens.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "No current tokens found for this user" });
+    }
+
+    const pricePromises = currentTokens.map(async (tokenObj: any) => {
+      const { hash } = tokenObj;
+
+      const latestPriceData = await dailyTokenCollection
+        .find({ token: hash })
+        .sort({ date: -1 })
+        .limit(1)
+        .toArray();
+
+      if (latestPriceData.length > 0) {
+        return {
+          token: hash,
+          price: latestPriceData[0].price,
+          date: latestPriceData[0].date,
+        };
+      } else {
+        return {
+          token: hash,
+          price: null,
+          date: null,
+        };
+      }
+    });
+
+    const prices = await Promise.all(pricePromises);
+
+    res.status(200).json(prices);
+  } catch (error) {
+    console.error("Error fetching holding status:", error);
+    res.status(500).json({ message: "Error fetching holding status" });
+  } finally {
+    await client.close();
   }
 });
 
