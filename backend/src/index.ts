@@ -5,6 +5,7 @@ import mongoClient from "./db/connect";
 dotenv.config();
 import { UserModel } from "./models/User";
 import { DailyTokenModel } from "./models/DailyToken";
+import { sign } from "jsonwebtoken";
 
 const uri = process.env.MONGO_URI!;
 
@@ -90,7 +91,7 @@ app.get("/api/tokens_purchased", async (req: Request, res: Response) => {
 
     const data = await collection.find({}).toArray();
 
-    res.json(data);
+    res.status(200).json(data);
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching tokens purchased");
@@ -119,16 +120,33 @@ app.post("/api/check-user", async (req: any, res: any) => {
   if (!user_public_key) {
     return res.status(400).json({ message: "User public key is required" });
   }
+
   try {
     await client.connect();
-
     const database = client.db("terra_tokens");
     const collection = database.collection("user");
-
     const user = await collection.findOne({ user_public_key });
 
     if (user) {
-      return res.status(200).json({ exists: true });
+      // Generate session token
+      const sessionToken = sign(
+        {
+          user_public_key,
+          userId: user._id,
+          // Add any additional claims you want to include
+        },
+        process.env.JWT_SECRET || "backupOrAlternative",
+        {
+          expiresIn: "24h",
+        }
+      );
+
+      // Return success response with token
+      return res.status(200).json({
+        exists: true,
+        sessionToken,
+        expiresIn: "24h",
+      });
     } else {
       return res.status(404).json({ exists: false });
     }

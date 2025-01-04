@@ -36,6 +36,7 @@
     "@tanstack/react-table": "^8.20.6",
     "@web3-react/core": "^8.2.3",
     "@web3-react/injected-connector": "^6.0.7",
+    "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
