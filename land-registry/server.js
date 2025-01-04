@@ -1,10 +1,16 @@
 const express = require('express');
+const { ethers } = require('ethers');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config();
+const cors = require('cors');
 const app = express();
-const port = 3000;
+const port = 8989;
+const uri = process.env.MONGO_URI
 
-const uri = process.env.MONGO_URI;
+
+// Middleware to parse JSON requests
+app.use(express.json());
+app.use(cors())
 
 const client = new MongoClient(uri, {
     serverApi: {
@@ -14,29 +20,33 @@ const client = new MongoClient(uri, {
     }
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+(async () => {
+    try {
+        await client.connect();
+        console.log("Connected to MongoDB");
+    } catch (error) {
+        console.error("MongoDB connection error:", error);
+    }
+})();
 
-app.set('view engine', 'ejs');
-
+// app.set('view engine', 'ejs');
 app.get('/', async (req, res) => {
     try {
-        // Connect the client to the server
-        await client.connect();
-
-        const database = client.db("land_registry_data"); // Replace with your database name
-        const collection = database.collection("hackathon"); // Replace with your collection name
-
+        const database = client.db("land_registry_data");
+        const collection = database.collection("hackathon");
         const data = await collection.find({}).toArray();
-
-        res.render('index', { data });
+        res.json(data);
     } catch (error) {
         console.error(error);
         res.status(500).send("Error fetching data");
-    } finally {
-        await client.close();
     }
 });
+
+
+app.post('/log-plot-number', async (req, res) => {
+
+});
+
 
 // Start the server
 app.listen(port, () => {
