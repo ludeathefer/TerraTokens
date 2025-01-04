@@ -1,18 +1,12 @@
 import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
-const { MongoClient, ServerApiVersion } = require('mongodb');
+import mongoClient from "./db/connect";
 dotenv.config();
+import { UserModel } from "./models/User";
 
+const uri = process.env.MONGO_URI!;
 
-const uri = process.env.MONGO_URI;
-
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+const client = mongoClient(uri);
 
 
 
@@ -73,6 +67,7 @@ app.get('/api/land_tokens', async (req: Request, res: Response) => {
     }
 });
 
+
 app.get('/api/tokens_for_sale', async (req: Request, res: Response) => {
     try {
         await client.connect();
@@ -90,6 +85,9 @@ app.get('/api/tokens_for_sale', async (req: Request, res: Response) => {
         await client.close();
     }
 });
+
+
+
 
 app.get('/api/tokens_purchased', async (req: Request, res: Response) => {
     try {
@@ -127,6 +125,23 @@ app.get('/api/users', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/api/check-user', async (req: Request, res: Response) => {
+   
+    const { username } = req.body; 
+
+    try {
+        const user = await UserModel.findOne({ username });
+
+        if (user) {
+            return res.status(200).json({ exists: true });
+        } else {
+            return res.status(404).json({ exists: false });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 
 app.listen(port, () => {
