@@ -3,6 +3,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { ScrollArea, ScrollBar } from "../components/ui/scroll-area";
 import Graphs from "../components/common/Graphs";
 import { Link } from "react-router-dom";
+import { useQueries } from "@tanstack/react-query";
+import { useStore } from "../hooks/use-store";
+import { getHoldingStatusApi, getTopLandsApi } from "../api";
 // import { TrendingUp } from "lucide-react"
 // import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
@@ -148,6 +151,17 @@ const tokensListWeekly = [
 ];
 
 const Dashboard = () => {
+  const userPublicKey = useStore((state) => state.userPublicKey);
+  const [topLandsQuery, holdingStatusQuery] = useQueries({
+    queries: [
+      { queryKey: ["top-lands"], queryFn: getTopLandsApi },
+      {
+        queryKey: ["holding-status", userPublicKey],
+        queryFn: () => getHoldingStatusApi(userPublicKey),
+      },
+    ],
+  });
+
   const chartData = [
     { day: "1", value: 1100 },
     { day: "2", value: 1200 },
@@ -182,7 +196,7 @@ const Dashboard = () => {
       </div>
       <div className="flex h-[90vh] w-full items-center justify-center overflow-hidden">
         <div className="grid h-full w-full gap-4 p-2 grid-cols-5 grid-rows-2 rounded-lg shadow-md overflow-hidden md:grid-cols-5 md:grid-rows-2 sm:grid-cols-5 sm:grid-rows-2 xs:grid-cols-1 xs:grid-rows-auto">
-          <div className="col-span-3 row-span-1 rounded-lg shadow-md flex items-center justify-center p-4 border border-green-400">
+          <div className="col-span-3 row-span-1 rounded-lg shadow-md flex items-center justify-center p-4 border border-zinc-800">
             <div className="flex items-center w-full h-full">
               <div className="flex-1 pr-4">
                 <Graphs
@@ -216,17 +230,23 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div className="col-span-2 row-span-1 rounded-lg shadow-md flex items-center justify-center p-4 border-green-400 border">
+          <div className="col-span-2 row-span-1 rounded-lg shadow-md flex items-center justify-center p-4 border-zinc-800 border">
             <div className="flex flex-col h-full w-full space-y-2">
               <h1 className="text-xl font-semibold">Market</h1>
-              <ScrollArea className="flex flex-col h-full w-full   px-2">
-                {marketItems.map((item, idx) => {
-                  return (
+              <ScrollArea className="flex flex-col h-full w-full px-2">
+                {topLandsQuery.isLoading ? (
+                  <p className="p-4">Loading...</p>
+                ) : topLandsQuery.isError ? (
+                  <p className="p-4">
+                    An error occured. {topLandsQuery.error?.message}
+                  </p>
+                ) : (
+                  topLandsQuery.data.map((item, idx) => (
                     <div
-                      className="flex flex-row justify-between w-full p-2 border border-zinc-800 rounded-md my-2 "
+                      className="flex flex-row justify-between w-full p-2 border border-zinc-800 rounded-md my-2 items-center hover:bg-accent "
                       key={idx}
                     >
-                      <div className="flex flex-row space-x-2">
+                      <div className="flex flex-row space-x-2 p-1">
                         <Avatar>
                           <AvatarImage src="https://github.com/shadcn.png" />
                           <AvatarFallback>MA</AvatarFallback>
@@ -238,8 +258,8 @@ const Dashboard = () => {
                         <h1 className="text-green-500">{item.percentage}</h1>
                       </div>
                     </div>
-                  );
-                })}
+                  ))
+                )}
               </ScrollArea>
             </div>
           </div>
@@ -247,36 +267,46 @@ const Dashboard = () => {
             <h1 className="text-2xl font-semibold py-3">Your Holdings</h1>
             <ScrollArea className="h-full w-full rounded-md pb-3">
               <div className="flex gap-4 mt-2  ">
-                {tokensListWeekly.map((tokensList, tnt) => (
-                  <Link
-                    to={"/land-detail/" + tnt}
-                    className="h-full w-60 px-5 bg-green-900/40 rounded-xl"
-                    key={tnt}
-                  >
-                    <p className=" font-semibold text-white text-center mt-2">
-                      {tokensList.area}, {tokensList.city}
-                    </p>
-                    <div className="flex justify-between py-2 bg-green-900 mt-3 mb-2 -mx-5 px-5 ">
-                      <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>MA</AvatarFallback>
-                      </Avatar>
-                      <p className="text-3xl font-semibold">
-                        {tokensList.noOfTokens} Tokens
+                {holdingStatusQuery.isLoading ? (
+                  <p className="p-4">Loading...</p>
+                ) : holdingStatusQuery.isError ? (
+                  <p className="p-4">
+                    An error occured. {holdingStatusQuery.error.message}
+                  </p>
+                ) : Array.isArray(holdingStatusQuery.data) ? (
+                  holdingStatusQuery.data.map((tokensList, tnt) => (
+                    <Link
+                      to={"/land-detail/" + tnt}
+                      className="h-full w-60 px-5 bg-green-900/40 rounded-xl"
+                      key={tnt}
+                    >
+                      <p className=" font-semibold text-white text-center mt-2">
+                        {tokensList.area}, {tokensList.city}
                       </p>
-                    </div>
+                      <div className="flex justify-between py-2 bg-green-900 mt-3 mb-2 -mx-5 px-5 ">
+                        <Avatar>
+                          <AvatarImage src="https://github.com/shadcn.png" />
+                          <AvatarFallback>MA</AvatarFallback>
+                        </Avatar>
+                        <p className="text-3xl font-semibold">
+                          {tokensList.noOfTokens} Tokens
+                        </p>
+                      </div>
 
-                    <p className="font-semibold text-xl text-right mb-2">
-                      Rs. {tokensList.price}
-                    </p>
-                    <p className=" text-lg text-center bg-white/90 -mx-5 text-green-900 px-5 py-2 rounded-b-xl">
-                      Increased by{" "}
-                      <span className="font-bold text-green-700">
-                        {tokensList.percentageIncrease}
-                      </span>{" "}
-                    </p>
-                  </Link>
-                ))}
+                      <p className="font-semibold text-xl text-right mb-2">
+                        Rs. {tokensList.price}
+                      </p>
+                      <p className=" text-lg text-center bg-white/90 -mx-5 text-green-900 px-5 py-2 rounded-b-xl">
+                        Increased by{" "}
+                        <span className="font-bold text-green-700">
+                          {tokensList.percentageIncrease}
+                        </span>{" "}
+                      </p>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="p-4">{holdingStatusQuery.data.message}</p>
+                )}
               </div>
               {/* <text>afhgiasf</text> */}
               <ScrollBar orientation="horizontal" />
