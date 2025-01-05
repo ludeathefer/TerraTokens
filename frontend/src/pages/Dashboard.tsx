@@ -241,7 +241,6 @@ const Dashboard = () => {
                     An error occured. {topLandsQuery.error?.message}
                   </p>
                 ) : (
-                  topLandsQuery.isSuccess &&
                   topLandsQuery.data.map((item, idx) => (
                     <div
                       className="flex flex-row justify-between w-full p-2 border border-zinc-800 rounded-md my-2 items-center hover:bg-accent "
@@ -268,44 +267,46 @@ const Dashboard = () => {
             <h1 className="text-2xl font-semibold py-3">Your Holdings</h1>
             <ScrollArea className="h-full w-full rounded-md pb-3">
               <div className="flex gap-4 mt-2  ">
-                {holdingStatusQuery.isLoading && (
+                {holdingStatusQuery.isLoading ? (
                   <p className="p-4">Loading...</p>
-                )}
-                {holdingStatusQuery.isError && (
+                ) : holdingStatusQuery.isError ? (
                   <p className="p-4">
                     An error occured. {holdingStatusQuery.error.message}
                   </p>
-                )}
-                {holdingStatusQuery.data?.map((tokensList, tnt) => (
-                  <Link
-                    to={"/land-detail/" + tnt}
-                    className="h-full w-60 px-5 bg-green-900/40 rounded-xl"
-                    key={tnt}
-                  >
-                    <p className=" font-semibold text-white text-center mt-2">
-                      {tokensList.area}, {tokensList.city}
-                    </p>
-                    <div className="flex justify-between py-2 bg-green-900 mt-3 mb-2 -mx-5 px-5 ">
-                      <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>MA</AvatarFallback>
-                      </Avatar>
-                      <p className="text-3xl font-semibold">
-                        {tokensList.noOfTokens} Tokens
+                ) : Array.isArray(holdingStatusQuery.data) ? (
+                  holdingStatusQuery.data.map((tokensList, tnt) => (
+                    <Link
+                      to={"/land-detail/" + tnt}
+                      className="h-full w-60 px-5 bg-green-900/40 rounded-xl"
+                      key={tnt}
+                    >
+                      <p className=" font-semibold text-white text-center mt-2">
+                        {tokensList.area}, {tokensList.city}
                       </p>
-                    </div>
+                      <div className="flex justify-between py-2 bg-green-900 mt-3 mb-2 -mx-5 px-5 ">
+                        <Avatar>
+                          <AvatarImage src="https://github.com/shadcn.png" />
+                          <AvatarFallback>MA</AvatarFallback>
+                        </Avatar>
+                        <p className="text-3xl font-semibold">
+                          {tokensList.noOfTokens} Tokens
+                        </p>
+                      </div>
 
-                    <p className="font-semibold text-xl text-right mb-2">
-                      Rs. {tokensList.price}
-                    </p>
-                    <p className=" text-lg text-center bg-white/90 -mx-5 text-green-900 px-5 py-2 rounded-b-xl">
-                      Increased by{" "}
-                      <span className="font-bold text-green-700">
-                        {tokensList.percentageIncrease}
-                      </span>{" "}
-                    </p>
-                  </Link>
-                ))}
+                      <p className="font-semibold text-xl text-right mb-2">
+                        Rs. {tokensList.price}
+                      </p>
+                      <p className=" text-lg text-center bg-white/90 -mx-5 text-green-900 px-5 py-2 rounded-b-xl">
+                        Increased by{" "}
+                        <span className="font-bold text-green-700">
+                          {tokensList.percentageIncrease}
+                        </span>{" "}
+                      </p>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="p-4">{holdingStatusQuery.data.message}</p>
+                )}
               </div>
               {/* <text>afhgiasf</text> */}
               <ScrollBar orientation="horizontal" />

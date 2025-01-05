@@ -24,27 +24,29 @@ const generateTableData = (rowCount: number): TableData[] => {
   });
 };
 
-const tableData = generateTableData(10);
+const tableData =
+  [{ name: "Kal Prasad", quantity: 40, tokenPrice: 12, totalPrice: 480 }] ||
+  generateTableData(10);
 
 const TokenTable = ({ buyButton }) => {
   return (
-    <ScrollArea className="w-full h-52 overflow-auto ">
-      <table className="min-w-full border-collapse border border-green-600 rounded-lg">
-        <thead className=" bg-green-700 text-green-100  sticky -top-1 z-10 ">
-          <tr className="bg-green-700 text-white  ">
-            <th className="border border-green-950 px-4 py-3 text-left font-semibold  ">
+    <ScrollArea className="w-full h-56 overflow-auto ">
+      <table className="min-w-full border-collapse border border-green-600 rounded-lg overflow-hidden">
+        <thead className="bg-green-700 text-green-100 sticky -top-1 z-10">
+          <tr>
+            <th className="border border-green-950 px-4 py-10 text-left font-semibold rounded-tl-lg">
               Name
             </th>
-            <th className="border border-green-950 px-4 py-3 text-left font-semibold  ">
+            <th className="border border-green-950 px-4 py-10 text-left font-semibold">
               Quantity
             </th>
-            <th className="border border-green-950 px-4 py-3 text-left font-semibold  ">
+            <th className="border border-green-950 px-4 py-10 text-left font-semibold">
               Token Price
             </th>
-            <th className="border border-green-950 px-4 py-3 text-left font-semibold  ">
+            <th className="border border-green-950 px-4 py-10 text-left font-semibold">
               Total Price
             </th>
-            <th className="border border-green-950 px-4 py-3 text-left font-semibold  ">
+            <th className="border border-green-950 px-4 py-10 text-left font-semibold rounded-tr-lg">
               Action
             </th>
           </tr>
@@ -57,17 +59,17 @@ const TokenTable = ({ buyButton }) => {
                 index % 2 === 0 ? "bg-green-600" : "bg-green-800"
               } hover:bg-green-700 text-white`}
             >
-              <td className="border border-green-950 px-4 py-2">{row.name}</td>
-              <td className="border border-green-950 px-4 py-2">
+              <td className="border border-green-950 px-4 py-5">{row.name}</td>
+              <td className="border border-green-950 px-4 py-5">
                 {row.quantity}
               </td>
-              <td className="border border-green-950 px-4 py-2">
+              <td className="border border-green-950 px-4 py-5">
                 Rs. {row.tokenPrice}
               </td>
-              <td className="border border-green-950 px-4 py-2">
+              <td className="border border-green-950 px-4 py-5">
                 Rs. {row.totalPrice}
               </td>
-              <td className="border border-green-950 px-4 py-2">{buyButton}</td>
+              <td className="border border-green-950 px-4 py-5">{buyButton}</td>
             </tr>
           ))}
         </tbody>

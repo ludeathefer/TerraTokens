@@ -33,7 +33,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/land-detail/:tokenID",
+    path: "/land-detail/:tokenId",
     element: (
       <PrivateRoute>
         <LandDetail />

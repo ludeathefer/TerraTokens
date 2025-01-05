@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
@@ -16,10 +17,51 @@ import { Separator } from "../components/ui/separator";
 import Graphs from "../components/common/Graphs";
 import { cn } from "../lib/utils";
 import TokenTable from "../components/common/TokenTable";
+import { useMutation, useQueries } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import {
+  getLandTokenDetailsApi,
+  getTokensForSaleApi,
+  getTokensPurchasedApi,
+} from "../api";
 
 const LandDetail = () => {
+  const { tokenId } = useParams();
   const [isSellDialogOpen, setIsSellDialogOpen] = useState<boolean>(false);
   const [isBuyDialogOpen, setIsBuyDialogOpen] = useState<boolean>(false);
+
+  const buyTokenMutation = useMutation({
+    mutationFn: getTokensPurchasedApi,
+    onSuccess: () => {
+      console.log("Purchased Api");
+    },
+    onError: () => {
+      console.log("Insufficient funds");
+    },
+  });
+
+  const sellTokenMutation = useMutation({
+    mutationFn: ({ seller, land_hash, amount, number }) => {
+      console.log(seller, land_hash, amount, number);
+    },
+    onSuccess: () => {
+      console.log("Sold tokens");
+    },
+    onError: () => {
+      console.log("Insufficient tokens");
+    },
+  });
+
+  const [tokenDetailsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["token-details", tokenId],
+        queryFn: () => getLandTokenDetailsApi(tokenId),
+      },
+    ],
+  });
+
+  console.log(tokenDetailsQuery.data);
 
   const graphArray = [
     {
@@ -98,12 +140,16 @@ const LandDetail = () => {
       <DealTokenDialog
         dialogState={isSellDialogOpen}
         setDialogState={setIsSellDialogOpen}
+        submitTrigger={sellTokenMutation.mutate}
         type={1}
+        max={[32, 480 + 50]}
       />
       <DealTokenDialog
         dialogState={isBuyDialogOpen}
         setDialogState={setIsBuyDialogOpen}
+        submitTrigger={buyTokenMutation.mutate}
         type={0}
+        max={[12, 0]}
       />
       <div className="w-full flex flex-row p-4 justify-between">
         <h1 className="text-4xl font-bold dark:text-white">Land Details</h1>
@@ -125,18 +171,25 @@ const LandDetail = () => {
                 </div>
               </div> */}
               {/* <Separator className=" dark:bg-white/20 " /> */}
-              <div className="flex flex-row w-full p-4 justify-between items-center">
+              <div className="flex flex-row w-full p-4 pb-10 justify-between items-center">
                 <div className="flex flex-row justify-start items-center space-x-2">
-                  <h1 className="text-xl font-medium">Number of Tokens</h1>
-                  <p className="text-2xl font-bold">50</p>
+                  <h1 className="text-xl font-medium pr-4">Total tokens</h1>
+                  <p className="text-3xl font-bold">12</p>
                 </div>
-                <Button className="w-20 h-10 text-md"> Sell</Button>
+                <Button
+                  onClick={() => {
+                    setIsSellDialogOpen(true);
+                  }}
+                  className="w-20 h-10 text-md"
+                >
+                  Sell
+                </Button>
               </div>
               <TokenTable
                 buyButton={
                   <Button
                     className="w-16 h-[2.5rem]"
-                    onClick={() => {
+                    onClick={(n) => {
                       setIsBuyDialogOpen(true);
                     }}
                   >
