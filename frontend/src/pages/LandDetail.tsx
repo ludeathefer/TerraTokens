@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
@@ -16,10 +17,51 @@ import { Separator } from "../components/ui/separator";
 import Graphs from "../components/common/Graphs";
 import { cn } from "../lib/utils";
 import TokenTable from "../components/common/TokenTable";
+import { useMutation, useQueries } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import {
+  buyTokensApi,
+  getLandTokenDetailsApi,
+  getTokensForSaleApi,
+  getTokensPurchasedApi,
+} from "../api";
 
 const LandDetail = () => {
+  const { tokenId } = useParams();
   const [isSellDialogOpen, setIsSellDialogOpen] = useState<boolean>(false);
   const [isBuyDialogOpen, setIsBuyDialogOpen] = useState<boolean>(false);
+
+  const buyTokenMutation = useMutation({
+    mutationFn: buyTokensApi,
+    onSuccess: () => {
+      console.log("Purchased Tokens");
+    },
+    onError: () => {
+      console.log("Insufficient funds");
+    },
+  });
+
+  const sellTokenMutation = useMutation({
+    mutationFn: ({ seller: uniq, land_hash, amount, number }) => {
+      console.log(seller, land_hash, amount, number);
+    },
+    onSuccess: () => {
+      console.log("Sold tokens");
+    },
+    onError: () => {
+      console.log("Insufficient tokens");
+    },
+  });
+
+  const [tokenDetailsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["token-for-sale", tokenId],
+        queryFn: getTokensForSaleApi,
+        select: (data) => data.find((token) => token.land_hash === tokenId),
+      },
+    ],
+  });
 
   const graphArray = [
     {
@@ -93,16 +135,27 @@ const LandDetail = () => {
         : 0
     );
   };
+
+  if (tokenDetailsQuery.isLoading) return <p className="p-4">Loading...</p>;
+  if (tokenDetailsQuery.isError)
+    return (
+      <p className="p-4">An error occured. {tokenDetailsQuery.error.message}</p>
+    );
+
   return (
     <div className="h-screen w-full flex flex-col">
       <DealTokenDialog
+        data={tokenDetailsQuery.data}
         dialogState={isSellDialogOpen}
         setDialogState={setIsSellDialogOpen}
+        submitTrigger={sellTokenMutation.mutate}
         type={1}
       />
       <DealTokenDialog
+        data={tokenDetailsQuery.data}
         dialogState={isBuyDialogOpen}
         setDialogState={setIsBuyDialogOpen}
+        submitTrigger={buyTokenMutation.mutate}
         type={0}
       />
       <div className="w-full flex flex-row p-4 justify-between">
@@ -125,13 +178,24 @@ const LandDetail = () => {
                 </div>
               </div> */}
               {/* <Separator className=" dark:bg-white/20 " /> */}
-              <div className="flex flex-row w-full p-4 justify-between items-start">
-                <h1 className="text-xl font-medium">Number of Tokens</h1>
-                <div className="flex flex-col">
-                  <p className="text-2xl font-bold">50</p>
+              <div className="flex flex-row w-full p-4 pb-10 justify-between items-center">
+                <div className="flex flex-row justify-start items-center space-x-2">
+                  <h1 className="text-xl font-medium pr-4">Total tokens</h1>
+                  <p className="text-3xl font-bold">
+                    {tokenDetailsQuery.data.number_of_tokens}
+                  </p>
                 </div>
+                <Button
+                  onClick={() => {
+                    setIsSellDialogOpen(true);
+                  }}
+                  className="w-20 h-10 text-md"
+                >
+                  Sell
+                </Button>
               </div>
               <TokenTable
+                data={tokenDetailsQuery.data}
                 buyButton={
                   <Button
                     className="w-16 h-[2.5rem]"

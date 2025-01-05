@@ -1,12 +1,19 @@
 import { useState, ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Sidebar } from "../common/Sidebar";
+import { useStore } from "../../hooks/use-store";
 
 interface PrivateRouteProps {
   children: ReactNode; // Define children as ReactNode
 }
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const isAuthenticated = useStore.getState().isAuthenticated;
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   return (
     <div className="h-screen w-screen flex flex-row">
@@ -18,7 +25,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
         }`}
         sidebarExpanded={sidebarExpanded}
         setSidebarExpanded={setSidebarExpanded}
-        activePage={useLocation().pathname}
+        activePage={location.pathname}
       />
       <div className="flex-1 overflow-hidden bg-green-950/5">{children}</div>
     </div>
