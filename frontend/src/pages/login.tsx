@@ -76,7 +76,7 @@ function Login() {
             account ? (
               <Button
                 variant="outline"
-                className="text-orange-600 bg-zinc-700 hover:bg-orange-600 hover:text-white"
+                className="text-orange-600 bg-zinc-700 hover:bg-orange-600 hover:text-white w-52 h-16"
                 onClick={connectMetamaskWallet}
               >
                 {account.slice(0, 6) + ".." + account.slice(-4)}
@@ -84,11 +84,11 @@ function Login() {
             ) : (
               <Button
                 variant="outline"
-                className="text-orange-600 bg-zinc-700 hover:bg-orange-600 hover:text-white"
+                className="text-orange-600 bg-zinc-700 hover:bg-orange-600 hover:text-white w-52 h-16"
                 onClick={connectMetamaskWallet}
               >
-                <img src={meta} className="object-contain h-6 w-6" />
-                Connect Your Wallet
+                <img src={meta} className="object-contain h-8 w-8" />
+                <p className="text-md">Connect Your Wallet</p>
               </Button>
             )
           ) : (
