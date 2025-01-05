@@ -88,7 +88,6 @@ contract Land is ERC1155, Ownable {
             "Already has an active listing"
         );
 
-        // Create and store the sale listing
         activeSaleListings[msg.sender] = SaleOrder({
             seller: msg.sender,
             landId: landId,

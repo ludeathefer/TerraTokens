@@ -1,40 +1,37 @@
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
+const { ethers: rawEthers } = require("ethers");
 
 async function main() {
-  try {
-    console.log("Starting deployment of Land contract...");
 
-    const Land = await hre.ethers.getContractFactory("Land");
-    const land = await Land.deploy();
-    const landAddress = await land.getAddress();
+  // Create a custom provider using ethers.js
+  const customProvider = new rawEthers.JsonRpcProvider('http://localhost:8545');
 
-    console.log(`Land contract deployed to: ${landAddress}`);
+  customProvider.pollingInterval = 1000;
 
-    if (network.config.chainId !== 31337 && process.env.ETHERSCAN_API_KEY) {
-      console.log("Waiting for block confirmations...");
-      await land.deployTransaction.wait(6);
+  // Get the list of available signers in Hardhat
+  const signers = await ethers.getSigners();
 
-      console.log("Verifying contract...");
-      await hre.run("verify:verify", {
-        address: land.address,
-        constructorArguments: [],
-      });
-      console.log("Contract verified on Etherscan");
-    }
-
-    const deploymentReceipt = await land.deploymentTransaction().wait();
-    console.log(
-      `Gas used for deployment: ${deploymentReceipt.gasUsed.toString()}`
-    );
-  } catch (error) {
-    console.error("Error during deployment:", error);
-    process.exit(1);
+  if (signers.length === 0) {
+    throw new Error("No accounts found in the Hardhat network");
   }
+
+  const signer = signers[0]
+
+  // Connect the signer to the custom provider
+  const customSigner = signer.connect(customProvider);
+
+  const Contract = await ethers.getContractFactory("Land", customSigner);
+
+  console.log("Deploying contract...");
+
+  const deployedTx = await Contract.deploy()
+  const deployed = await deployedTx.waitForDeployment();
+
+  console.log('Deployed at: ', await deployed.getAddress())
+
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
