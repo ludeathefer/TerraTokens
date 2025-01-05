@@ -20,6 +20,7 @@ import TokenTable from "../components/common/TokenTable";
 import { useMutation, useQueries } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import {
+  buyTokensApi,
   getLandTokenDetailsApi,
   getTokensForSaleApi,
   getTokensPurchasedApi,
@@ -31,9 +32,9 @@ const LandDetail = () => {
   const [isBuyDialogOpen, setIsBuyDialogOpen] = useState<boolean>(false);
 
   const buyTokenMutation = useMutation({
-    mutationFn: getTokensPurchasedApi,
+    mutationFn: buyTokensApi,
     onSuccess: () => {
-      console.log("Purchased Api");
+      console.log("Purchased Tokens");
     },
     onError: () => {
       console.log("Insufficient funds");
@@ -41,7 +42,7 @@ const LandDetail = () => {
   });
 
   const sellTokenMutation = useMutation({
-    mutationFn: ({ seller, land_hash, amount, number }) => {
+    mutationFn: ({ seller: uniq, land_hash, amount, number }) => {
       console.log(seller, land_hash, amount, number);
     },
     onSuccess: () => {
@@ -55,13 +56,12 @@ const LandDetail = () => {
   const [tokenDetailsQuery] = useQueries({
     queries: [
       {
-        queryKey: ["token-details", tokenId],
-        queryFn: () => getLandTokenDetailsApi(tokenId),
+        queryKey: ["token-for-sale", tokenId],
+        queryFn: getTokensForSaleApi,
+        select: (data) => data.find((token) => token.land_hash === tokenId),
       },
     ],
   });
-
-  console.log(tokenDetailsQuery.data);
 
   const graphArray = [
     {
@@ -135,21 +135,28 @@ const LandDetail = () => {
         : 0
     );
   };
+
+  if (tokenDetailsQuery.isLoading) return <p className="p-4">Loading...</p>;
+  if (tokenDetailsQuery.isError)
+    return (
+      <p className="p-4">An error occured. {tokenDetailsQuery.error.message}</p>
+    );
+
   return (
     <div className="h-screen w-full flex flex-col">
       <DealTokenDialog
+        data={tokenDetailsQuery.data}
         dialogState={isSellDialogOpen}
         setDialogState={setIsSellDialogOpen}
         submitTrigger={sellTokenMutation.mutate}
         type={1}
-        max={[32, 480 + 50]}
       />
       <DealTokenDialog
+        data={tokenDetailsQuery.data}
         dialogState={isBuyDialogOpen}
         setDialogState={setIsBuyDialogOpen}
         submitTrigger={buyTokenMutation.mutate}
         type={0}
-        max={[12, 0]}
       />
       <div className="w-full flex flex-row p-4 justify-between">
         <h1 className="text-4xl font-bold dark:text-white">Land Details</h1>
@@ -174,7 +181,9 @@ const LandDetail = () => {
               <div className="flex flex-row w-full p-4 pb-10 justify-between items-center">
                 <div className="flex flex-row justify-start items-center space-x-2">
                   <h1 className="text-xl font-medium pr-4">Total tokens</h1>
-                  <p className="text-3xl font-bold">12</p>
+                  <p className="text-3xl font-bold">
+                    {tokenDetailsQuery.data.number_of_tokens}
+                  </p>
                 </div>
                 <Button
                   onClick={() => {
@@ -186,10 +195,11 @@ const LandDetail = () => {
                 </Button>
               </div>
               <TokenTable
+                data={tokenDetailsQuery.data}
                 buyButton={
                   <Button
                     className="w-16 h-[2.5rem]"
-                    onClick={(n) => {
+                    onClick={() => {
                       setIsBuyDialogOpen(true);
                     }}
                   >

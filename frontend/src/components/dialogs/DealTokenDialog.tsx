@@ -1,4 +1,5 @@
 import { Copy } from "lucide-react";
+useStore;
 
 import { Button } from "../ui/button";
 import {
@@ -27,6 +28,7 @@ interface DialogProps {
 }
 
 export const DealTokenDialog: React.FC<DialogProps> = ({
+  data,
   dialogState,
   setDialogState,
   type,
@@ -35,7 +37,7 @@ export const DealTokenDialog: React.FC<DialogProps> = ({
 }) => {
   const [number, setNumber] = useState<number>(0);
   const [amount, setAmount] = useState<number>(0);
-  const userPublicKey = useStore((state) => state.userPublicKey);
+  const userPublicKey = useStore.getState().userPublicKey;
   return (
     <Dialog open={dialogState} onOpenChange={setDialogState}>
       <DialogContent className="sm:max-w-lg">
@@ -50,16 +52,15 @@ export const DealTokenDialog: React.FC<DialogProps> = ({
           <div className="flex flex-col items-center">
             <NumberField
               value={number}
-              setValue={(n) => (n >= 0 && n < max[0] ? setNumber(n) : null)}
+              setValue={(n) =>
+                n >= 0 && n < data.number_of_tokens ? setNumber(n) : null
+              }
             />
             <p className="text-sm pt-2">Quantity</p>
           </div>
           {type === 1 && (
             <div className="flex flex-col items-center">
-              <NumberField
-                value={amount}
-                setValue={(n) => (n >= 0 && n < max[1] ? setAmount(n) : null)}
-              />
+              <NumberField value={amount} setValue={setAmount} />
               <p className="text-sm pt-2">Amount</p>
             </div>
           )}
@@ -73,16 +74,25 @@ export const DealTokenDialog: React.FC<DialogProps> = ({
           <Button
             type="button"
             variant="outline"
-            onClick={() =>
+            onClick={() => {
               type === 1
                 ? submitTrigger({
-                    userPublicKey,
-                    land_hash: "HASH",
-                    number,
-                    amount,
+                    seller: userPublicKey,
+                    land_hash: data.land_hash,
+                    number_of_tokens: number,
+                    price: amount,
                   })
-                : null
-            }
+                : submitTrigger({
+                    buyer: userPublicKey,
+                    land_hash: data.land_hash,
+                    price: data.price,
+                    number_of_tokens: number,
+                    whose: data.seller,
+                  });
+              setNumber(0);
+              setAmount(0);
+              setDialogState(false);
+            }}
           >
             Submit
           </Button>

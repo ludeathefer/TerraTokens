@@ -151,7 +151,7 @@ const tokensListWeekly = [
 ];
 
 const Dashboard = () => {
-  const userPublicKey = useStore((state) => state.userPublicKey);
+  const userPublicKey = useStore.getState().userPublicKey;
   const [topLandsQuery, holdingStatusQuery] = useQueries({
     queries: [
       { queryKey: ["top-lands"], queryFn: getTopLandsApi },

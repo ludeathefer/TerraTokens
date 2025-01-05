@@ -176,7 +176,7 @@ const tokensListWeekly = [
 const MarketPlace = () => {
   // State to hold the search input
   const [searchQuery, setSearchQuery] = useState("");
-  const [percentageIncreaseArray] = useState();
+  // const [percentageIncreaseArray] = useState();
 
   // Fetch recent and top lands
   const [recentLandsQuery, topLandsQuery] = useQueries({
@@ -194,6 +194,8 @@ const MarketPlace = () => {
   const filteredTopLands = topLandsQuery.data?.filter((item) =>
     item.landDetail.city.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  console.log(recentLandsQuery.data, topLandsQuery.data);
 
   return (
     <div className="h-screen w-auto flex flex-col gap-8 pt-12 pr-4">
@@ -261,7 +263,7 @@ const MarketPlace = () => {
                 <Link
                   to={"/land-detail/" + item.token}
                   className="h-full w-60 px-5 pb-2 bg-green-900/40 rounded-xl"
-                  key={item.id}
+                  key={item._id}
                 >
                   <p className="font-semibold text-white text-center mt-1">
                     {item.land_detail.city}, {item.land_detail.ward}
@@ -325,9 +327,7 @@ const MarketPlace = () => {
                   </p>
                   <p className="text-lg text-center bg-white/90 -mx-5 text-green-900 px-5 py-2 rounded-b-xl">
                     Increased by{" "}
-                    <span className="font-bold text-green-700">
-                      {Math.floor(Math.random() * (17 - 4 + 1)) + 4}%
-                    </span>
+                    <span className="font-bold text-green-700"></span>
                   </p>
                 </Link>
               ))

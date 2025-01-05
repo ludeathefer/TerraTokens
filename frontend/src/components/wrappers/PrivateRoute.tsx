@@ -8,7 +8,7 @@ interface PrivateRouteProps {
 }
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const isAuthenticated = useStore((state) => state.isAuthenticated());
+  const isAuthenticated = useStore.getState().isAuthenticated;
   const location = useLocation();
 
   if (!isAuthenticated) {

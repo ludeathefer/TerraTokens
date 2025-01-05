@@ -96,6 +96,9 @@ export const getLandTokenDetailsApi = async (token: string) =>
 export const getLandTokenPricesApi = async (token: string) =>
   (await axiosInstance.get(`/land_tokens/${token}/prices`)).data;
 
+export const buyTokensApi = async (tokenDetails) =>
+  (await axiosInstance.post(`buy_tokens`, tokenDetails)).data;
+
 // Holding Status API
 export const getHoldingStatusApi = async (userPublicKey: string) =>
   (
