@@ -1,5 +1,5 @@
-// routes.ts
 import express, { Request, Response } from "express";
+import { sign } from "jsonwebtoken";
 import { getClient } from "../db/connect"; // Import your database connection module
 
 const router = express.Router();
@@ -129,6 +129,46 @@ router.get("/api/users", async (req: Request, res: Response) => {
 });
 
 // Check if user exists
+router.post("/api/check-user", async (req: any, res: any) => {
+  const { user_public_key } = req.body;
+
+  if (!user_public_key) {
+    return res.status(400).json({ message: "User public key is required" });
+  }
+
+  try {
+    const database = getClient().db("terra_tokens");
+    const collection = database.collection("user");
+    const user = await collection.findOne({ user_public_key });
+
+    if (user) {
+      // Generate session token
+      const sessionToken = sign(
+        {
+          user_public_key,
+          userId: user._id,
+          // Add any additional claims you want to include
+        },
+        process.env.JWT_SECRET || "backupOrAlternative",
+        {
+          expiresIn: "24h",
+        }
+      );
+
+      // Return success response with token
+      return res.status(200).json({
+        exists: true,
+        sessionToken,
+        expiresIn: "24h",
+      });
+    } else {
+      return res.status(404).json({ exists: false });
+    }
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return res.status(500).send("Error fetching users");
+  }
+});
 router.post("/api/check-user", async (req: Request, res: any) => {
   const { user_public_key } = req.body;
 
