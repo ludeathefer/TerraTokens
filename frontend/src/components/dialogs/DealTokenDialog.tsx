@@ -53,7 +53,9 @@ export const DealTokenDialog: React.FC<DialogProps> = ({
             <NumberField
               value={number}
               setValue={(n) =>
-                n >= 0 && n < data.number_of_tokens ? setNumber(n) : null
+                n > 0 && n <= data.number_of_tokens - data.number_sold
+                  ? setNumber(n)
+                  : null
               }
             />
             <p className="text-sm pt-2">Quantity</p>

@@ -71,7 +71,7 @@ router.post("/api/sell_tokens", async (req: Request, res: any) => {
       land_hash,
       price,
       number_of_tokens,
-      numbers_sold: 0, // Default value
+      number_sold: 0, // Default value
     };
 
     // Insert the new token into tokens_for_sale collection

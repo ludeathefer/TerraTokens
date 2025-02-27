@@ -68,8 +68,8 @@ const Graphs = (props: Props) => {
         <Area
           dataKey="value" // Updated to match the chartData field
           type="monotone" // Changed to "monotone" for smoother curves
-          fill="gray"
-          fillOpacity={0.4}
+          fill="#355E3B"
+          fillOpacity={0.2}
           stroke="green"
         />
       </AreaChart>

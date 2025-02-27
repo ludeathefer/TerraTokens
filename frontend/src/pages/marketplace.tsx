@@ -200,13 +200,13 @@ const MarketPlace = () => {
   return (
     <div className="h-screen w-auto flex flex-col gap-8 pt-12 pr-4">
       <div className="relative top-0">
-        <h1 className="text-4xl font-bold dark:text-white pb-6 pl-8">
+        <h1 className="text-4xl font-bold dark:text-white pb-4 pl-8">
           Marketplace
         </h1>
         <div className="flex flex-row w-[99%] space-x-4 pl-9">
           <Input
             placeholder="Location"
-            className="dark:border-white/10 h-full"
+            className="dark:border-white/10 h-full py-4"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)} // Update search query
           />
@@ -236,7 +236,7 @@ const MarketPlace = () => {
               </div>
             </PopoverContent>
           </Popover>
-          <Button className="h-full dark:bg-green-700 dark:text-white">
+          <Button className="h-full mt-2 dark:bg-green-700 dark:text-white">
             Search
           </Button>
         </div>
@@ -268,12 +268,13 @@ const MarketPlace = () => {
                   <p className="font-semibold text-white text-center mt-1">
                     {item.land_detail.city}, {item.land_detail.ward}
                   </p>
-                  <div className="flex justify-between py-2 bg-green-900 my-2 -mx-5 px-5">
+
+                  <div className="flex justify-between items-center py-2 bg-green-900 my-2 -mx-5 px-5">
                     <Avatar>
                       <AvatarImage src="https://github.com/shadcn.png" />
                       <AvatarFallback>MA</AvatarFallback>
                     </Avatar>
-                    <p className="text-3xl font-semibold">
+                    <p className="text-3xl font-semibold w-32 text-ellipsis overflow-hidden text-end">
                       {item.no_of_tokens} Tokens
                     </p>
                   </div>

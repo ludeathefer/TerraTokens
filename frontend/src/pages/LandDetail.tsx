@@ -17,51 +17,64 @@ import { Separator } from "../components/ui/separator";
 import Graphs from "../components/common/Graphs";
 import { cn } from "../lib/utils";
 import TokenTable from "../components/common/TokenTable";
-import { useMutation, useQueries } from "@tanstack/react-query";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import {
   buyTokensApi,
   getLandTokenDetailsApi,
   getTokensForSaleApi,
   getTokensPurchasedApi,
+  sellTokensApi,
 } from "../api";
+import { toast } from "sonner";
 
 const LandDetail = () => {
   const { tokenId } = useParams();
   const [isSellDialogOpen, setIsSellDialogOpen] = useState<boolean>(false);
   const [isBuyDialogOpen, setIsBuyDialogOpen] = useState<boolean>(false);
 
+  const queryClient = useQueryClient();
+
   const buyTokenMutation = useMutation({
     mutationFn: buyTokensApi,
     onSuccess: () => {
-      console.log("Purchased Tokens");
+      queryClient.invalidateQueries(["tokens-to-refresh"]);
+      toast.success("Bought tokens successfully.");
     },
-    onError: () => {
-      console.log("Insufficient funds");
-    },
+    onError: () => toast.error("Error buying tokens."),
   });
 
   const sellTokenMutation = useMutation({
-    mutationFn: ({ seller: uniq, land_hash, amount, number }) => {
-      console.log(seller, land_hash, amount, number);
-    },
+    mutationFn: sellTokensApi,
     onSuccess: () => {
-      console.log("Sold tokens");
+      queryClient.invalidateQueries(["tokens-to-refresh"]);
+      toast.success("Sold tokens successfully.");
     },
-    onError: () => {
-      console.log("Insufficient tokens");
-    },
+    onError: () => toast.error("Error selling tokens."),
   });
 
-  const [tokenDetailsQuery] = useQueries({
+  const [onSaleTokenDetailsQuery, purchasedTokenDetailsQuery] = useQueries({
     queries: [
       {
-        queryKey: ["token-for-sale", tokenId],
+        queryKey: ["tokens-to-refresh", "tokenId"],
         queryFn: getTokensForSaleApi,
         select: (data) => data.find((token) => token.land_hash === tokenId),
       },
+      {
+        queryKey: ["tokens-to-refresh", "purchase"],
+        queryFn: getTokensPurchasedApi,
+        select: (data) =>
+          data.reduce((sum, item) => {
+            if (item.land_hash === tokenId) {
+              return sum + (item.number_of_tokens || 0);
+            }
+            return sum;
+          }, 0),
+      },
     ],
   });
+
+  console.log(purchasedTokenDetailsQuery.data);
 
   const graphArray = [
     {
@@ -136,23 +149,27 @@ const LandDetail = () => {
     );
   };
 
-  if (tokenDetailsQuery.isLoading) return <p className="p-4">Loading...</p>;
-  if (tokenDetailsQuery.isError)
+  if (onSaleTokenDetailsQuery.isLoading || purchasedTokenDetailsQuery.isLoading)
+    return <p className="p-4">Loading...</p>;
+  if (onSaleTokenDetailsQuery.isError || purchasedTokenDetailsQuery.isError)
     return (
-      <p className="p-4">An error occured. {tokenDetailsQuery.error.message}</p>
+      <p className="p-4">
+        An error occured. {onSaleTokenDetailsQuery.error?.message}{" "}
+        {purchasedTokenDetailsQuery.error?.message}
+      </p>
     );
 
   return (
     <div className="h-screen w-full flex flex-col">
       <DealTokenDialog
-        data={tokenDetailsQuery.data}
+        data={onSaleTokenDetailsQuery.data}
         dialogState={isSellDialogOpen}
         setDialogState={setIsSellDialogOpen}
         submitTrigger={sellTokenMutation.mutate}
         type={1}
       />
       <DealTokenDialog
-        data={tokenDetailsQuery.data}
+        data={onSaleTokenDetailsQuery.data}
         dialogState={isBuyDialogOpen}
         setDialogState={setIsBuyDialogOpen}
         submitTrigger={buyTokenMutation.mutate}
@@ -182,7 +199,7 @@ const LandDetail = () => {
                 <div className="flex flex-row justify-start items-center space-x-2">
                   <h1 className="text-xl font-medium pr-4">Total tokens</h1>
                   <p className="text-3xl font-bold">
-                    {tokenDetailsQuery.data.number_of_tokens}
+                    {purchasedTokenDetailsQuery.data}
                   </p>
                 </div>
                 <Button
@@ -195,7 +212,7 @@ const LandDetail = () => {
                 </Button>
               </div>
               <TokenTable
-                data={tokenDetailsQuery.data}
+                data={onSaleTokenDetailsQuery.data}
                 buyButton={
                   <Button
                     className="w-16 h-[2.5rem]"
@@ -217,7 +234,7 @@ const LandDetail = () => {
                   chartConfig={chartConfig}
                 />
 
-                <Pagination className="pt-14">
+                <Pagination className="pt-10">
                   <PaginationContent>
                     <PaginationItem
                       onClick={() =>

@@ -5,7 +5,7 @@ import Graphs from "../components/common/Graphs";
 import { Link } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
-import { getHoldingStatusApi, getTopLandsApi } from "../api";
+import { getHoldingStatusApi, getRecentLandsApi, getTopLandsApi } from "../api";
 // import { TrendingUp } from "lucide-react"
 // import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
@@ -151,17 +151,15 @@ const tokensListWeekly = [
 ];
 
 const Dashboard = () => {
-  const userPublicKey = useStore.getState().userPublicKey;
-  const [topLandsQuery, holdingStatusQuery] = useQueries({
+  // const userPublicKey = useStore.getState().userPublicKey;
+  const [topLandsQuery, recentLandsQuery] = useQueries({
     queries: [
       { queryKey: ["top-lands"], queryFn: getTopLandsApi },
-      {
-        queryKey: ["holding-status", userPublicKey],
-        queryFn: () => getHoldingStatusApi(userPublicKey),
-      },
+      { queryKey: ["recent-lands"], queryFn: getRecentLandsApi },
     ],
   });
 
+  console.log(topLandsQuery.data);
   const chartData = [
     { day: "1", value: 1100 },
     { day: "2", value: 1200 },
@@ -180,9 +178,10 @@ const Dashboard = () => {
   const chartConfig = {
     value: {
       label: "value",
-      color: " hsl(var(--chart-2))",
+      color: "green-200",
     },
   };
+
   return (
     <div className="h-screen w-full flex flex-col">
       <div className="w-full flex flex-row p-4 justify-between">
@@ -209,7 +208,7 @@ const Dashboard = () => {
                 <div className="flex flex-col items-center gap-5 pb-4">
                   <h1 className="text-2xl font-medium">Total Holding</h1>
                   <div className="text-center">
-                    <p className="text-3xl font-bold">$25,000</p>
+                    <p className="text-3xl font-bold">Rs. 15,000</p>
                     <p className="text-md font-medium">
                       return <span className="text-green-600">+20%</span>
                     </p>
@@ -218,13 +217,13 @@ const Dashboard = () => {
                 <div className="flex justify-between">
                   <h1 className="text-xl font-medium">Total Invested</h1>
                   <div className="flex flex-col">
-                    <p className="text-2xl font-bold">$25,000</p>
+                    <p className="text-2xl font-bold">Rs. 25,000</p>
                   </div>
                 </div>
                 <div className="flex justify-between">
                   <h1 className="text-xl font-medium">Total Profit</h1>
                   <div className="flex flex-col">
-                    <p className="text-2xl font-bold">$25,000</p>
+                    <p className="text-2xl font-bold">Rs. 5,000</p>
                   </div>
                 </div>
               </div>
@@ -232,7 +231,7 @@ const Dashboard = () => {
           </div>
           <div className="col-span-2 row-span-1 rounded-lg shadow-md flex items-center justify-center p-4 border-zinc-800 border">
             <div className="flex flex-col h-full w-full space-y-2">
-              <h1 className="text-xl font-semibold">Market</h1>
+              <h1 className="text-xl font-semibold">Top Pick of today</h1>
               <ScrollArea className="flex flex-col h-full w-full px-2">
                 {topLandsQuery.isLoading ? (
                   <p className="p-4">Loading...</p>
@@ -253,64 +252,92 @@ const Dashboard = () => {
                         </Avatar>
                         <h1 className="text-lg">{item.name}</h1>
                       </div>
+                      <p className="text-white text-lg font-black">
+                        {item.landDetail.city}-{item.landDetail.ward}-
+                        {item.landDetail.street_number}
+                      </p>
+                      <p>{item.landDetail.land_class}</p>
                       <div className="flex flex-col">
-                        <h1>{item.price}</h1>
+                        <h1>Rs.{item.price}</h1>
                         <h1 className="text-green-500">{item.percentage}</h1>
                       </div>
                     </div>
                   ))
                 )}
+                <div className="flex flex-col w-full p-4 border border-zinc-800 rounded-md my-4 bg-zinc-900 text-white">
+                  <p className="text-lg font-medium italic text-gray-300">
+                    "Owning this property in Kathmandu has been a dream come
+                    true. The peaceful environment and accessibility to
+                    amenities make it perfect for building a family home."
+                  </p>
+                  <div className="flex justify-end text-end items-center pt-3">
+                    <div className="ml-3">
+                      <h1 className="text-md font-semibold text-gray-100">
+                        Ram Kaka
+                      </h1>
+                      <p className="text-sm text-gray-500">
+                        Owner of Kathmandu-Ward 1-123
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </ScrollArea>
             </div>
           </div>
-          <div className="col-span-5 row-span-1 rounded-lg shadow-md flex flex-col items-start justify-start p-4 w-full h-full space-y-2">
-            <h1 className="text-2xl font-semibold py-3">Your Holdings</h1>
-            <ScrollArea className="h-full w-full rounded-md pb-3">
-              <div className="flex gap-4 mt-2  ">
-                {holdingStatusQuery.isLoading ? (
+
+          <div className="flex flex-col pr-5 py-5 space-x-4 col-span-4 row-span-1">
+            <h1 className="text-xl font-semibold mx-4 py-2">Recently Added</h1>
+            <ScrollArea className="h-full w-auto rounded-md pb-3">
+              <div className="flex gap-4 mt-2 w-full">
+                {recentLandsQuery.isLoading ? (
                   <p className="p-4">Loading...</p>
-                ) : holdingStatusQuery.isError ? (
+                ) : recentLandsQuery.isError ? (
                   <p className="p-4">
-                    An error occured. {holdingStatusQuery.error.message}
+                    An error occurred. {recentLandsQuery.error?.message}
                   </p>
-                ) : Array.isArray(holdingStatusQuery.data) ? (
-                  holdingStatusQuery.data.map((tokensList, tnt) => (
+                ) : (
+                  recentLandsQuery.data.map((item) => (
                     <Link
-                      to={"/land-detail/" + tnt}
-                      className="h-full w-60 px-5 bg-green-900/40 rounded-xl"
-                      key={tnt}
+                      to={"/land-detail/" + item.token}
+                      className="h-full w-60 px-5 pb-2 bg-green-900/40 rounded-xl"
+                      key={item._id}
                     >
-                      <p className=" font-semibold text-white text-center mt-2">
-                        {tokensList.area}, {tokensList.city}
+                      <p className="font-semibold text-white text-center mt-1">
+                        {item.land_detail.city}, {item.land_detail.ward}
                       </p>
-                      <div className="flex justify-between py-2 bg-green-900 mt-3 mb-2 -mx-5 px-5 ">
+
+                      <div className="flex justify-between items-center py-2 bg-green-900 my-2 -mx-5 px-5">
                         <Avatar>
                           <AvatarImage src="https://github.com/shadcn.png" />
                           <AvatarFallback>MA</AvatarFallback>
                         </Avatar>
-                        <p className="text-3xl font-semibold">
-                          {tokensList.noOfTokens} Tokens
+                        <p className="text-3xl font-semibold w-32 text-ellipsis overflow-hidden text-end">
+                          {item.no_of_tokens} Tokens
                         </p>
                       </div>
-
-                      <p className="font-semibold text-xl text-right mb-2">
-                        Rs. {tokensList.price}
-                      </p>
-                      <p className=" text-lg text-center bg-white/90 -mx-5 text-green-900 px-5 py-2 rounded-b-xl">
-                        Increased by{" "}
-                        <span className="font-bold text-green-700">
-                          {tokensList.percentageIncrease}
-                        </span>{" "}
+                      <p className="font-semibold text-xl text-right">
+                        Rs. {1200}
                       </p>
                     </Link>
                   ))
-                ) : (
-                  <p className="p-4">{holdingStatusQuery.data.message}</p>
                 )}
               </div>
-              {/* <text>afhgiasf</text> */}
               <ScrollBar orientation="horizontal" />
             </ScrollArea>
+          </div>
+          <div className="col-span-1 row-span-1 pr-10 -ml-60 pb-20">
+            <iframe
+              className=" overflow-hidden rounded-lg"
+              width="100%"
+              height="300"
+              // frameborder="0"
+              scrolling="no"
+              // marginheight="0"
+              // marginwidth="0"
+              src="https://maps.google.com/maps?width=100%25&amp;height=600&amp;hl=en&amp;q=king's%20college+(My%20Business%20Name)&amp;t=&amp;z=14&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"
+            >
+              <a href="https://www.gps.ie/">gps tracker sport</a>
+            </iframe>
           </div>
         </div>
       </div>

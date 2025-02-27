@@ -51,7 +51,7 @@ const TokenTable = ({ data, buyButton }) => {
         <tbody>
           <tr className={`bg-green-800 hover:bg-green-700 text-white`}>
             <td className="border border-green-950 px-4 py-5">
-              {data.number_of_tokens}
+              {data.number_of_tokens - data.number_sold}
             </td>
             <td className="border border-green-950 px-4 py-5">
               Rs. {data.price}
