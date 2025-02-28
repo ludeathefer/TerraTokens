@@ -40,4 +40,5 @@ const LandInfo = ({
     </div>
   );
 };
+export { getIcon };
 export default LandInfo;
