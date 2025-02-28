@@ -117,7 +117,7 @@ const Dashboard = () => {
               {/* Key Details */}
               <div className="flex flex-col w-full">
                 <h1 className="font-normal text-black text-xl">Key Details</h1>
-                <div className="w-[640px] bg-white h-20 rounded-md  border border-black border-opacity-20 flex flex-row items-center justify-between py-4 px-8 mt-2">
+                <div className="w-[640px] bg-white h-20 rounded-md border border-black border-opacity-20 flex flex-row items-center justify-between py-4 px-8 mt-2">
                   <div className="flex flex-row items-center gap-8">
                     <div className="flex-1 flex flex-col justify-center">
                       <Label className="text-xs font-normal text-[#7d7d7d]">

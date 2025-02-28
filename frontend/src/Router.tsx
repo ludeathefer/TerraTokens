@@ -7,6 +7,7 @@ import LandDetail from "./pages/LandDetail";
 import MarketPlace from "./pages/marketplace";
 import Demo from "./pages/Demo";
 import Landing from "./pages/Landing";
+import TransactionHistory from "./pages/TransactionHistory";
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +39,14 @@ export const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <LandDetail />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/history/",
+    element: (
+      <PrivateRoute>
+        <TransactionHistory />
       </PrivateRoute>
     ),
   },
