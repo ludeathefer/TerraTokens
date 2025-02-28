@@ -292,7 +292,6 @@ const LandDetail = () => {
                   <h1 className="text-xl font-medium pr-4">Total tokens</h1>
                   <p className="text-3xl font-bold">12</p>
                 </div>
-                <Button className="w-20 h-10 text-lg"> Sell</Button>
                 <Button
                   onClick={() => {
                     setIsSellDialogOpen(true);

@@ -214,6 +214,7 @@ const App = () => {
   const [status, setStatus] = useState("");
   const [landId, setLandId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isMinted, setIsMinted] = useState(false);
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -274,26 +275,28 @@ const App = () => {
       const postData = {
         land_detail: landDetail,
         token,
-        no_of_tokens: numberOfFractions, // Ensure this matches your API's expected field name
+        no_of_tokens: Number(numberOfFractions), // Ensure this matches your API's expected field name
         date_created: dateCreated,
       };
 
       console.log("Posting data:", postData); // Log postData for debugging
 
-      try {
-        const response = await fetch("http://localhost:3000/api/add_land", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(postData),
-        });
+      if (isMinted) {
+        try {
+          const response = await fetch("http://localhost:3000/api/add_land", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(postData),
+          });
 
-        if (!response.ok) throw new Error("Failed to add land");
+          if (!response.ok) throw new Error("Failed to add land");
 
-        console.log("Land added successfully:", await response.json());
-      } catch (error) {
-        console.error("Error adding land:", error);
+          console.log("Land added successfully:", await response.json());
+        } catch (error) {
+          console.error("Error adding land:", error);
+        }
       }
     };
 
