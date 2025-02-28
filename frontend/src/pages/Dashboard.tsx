@@ -1,18 +1,8 @@
-import {
-  BellDot,
-  Building,
-  Plus,
-  Home,
-  Leaf,
-  Mountain,
-  Filter,
-} from "lucide-react";
+import { BellDot, Plus, Filter } from "lucide-react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -21,12 +11,8 @@ import { Button } from "../components/ui/button";
 import { Separator } from "../components/ui/separator";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Label } from "../components/ui/label";
+import LandInfo from "../components/common/LandInfo";
 
-interface LandInfoProps {
-  tokenCode: string;
-  propertyLocation: string;
-  propertyType: "commercial" | "residential" | "agricultural" | "recreational";
-}
 interface TableToken {
   tokenCode: string;
   propertyLocation: string;
@@ -57,41 +43,6 @@ const tokens: TableToken[] = [
     tokenPrice: 500,
   },
 ];
-
-const getIcon = (propertyType: LandInfoProps["propertyType"]) => {
-  switch (propertyType) {
-    case "commercial":
-      return <Building className="w-5 h-5 text-black" />;
-    case "residential":
-      return <Home className="w-5 h-5 text-black" />;
-    case "agricultural":
-      return <Leaf className="w-5 h-5 text-black" />;
-    case "recreational":
-      return <Mountain className="w-5 h-5 text-black" />;
-    default:
-      return <Building className="w-5 h-5 text-black" />; // Default to Building icon
-  }
-};
-
-const LandInfo = ({
-  tokenCode,
-  propertyLocation,
-  propertyType,
-}: LandInfoProps) => {
-  return (
-    <div className="flex flex-row">
-      <div className="flex flex-row justify-center items-center w-10 h-10 rounded-full shadow-md bg-white border-black border-opacity-20 border">
-        {getIcon(propertyType)}
-      </div>
-      <div className="flex flex-col pl-2">
-        <h3 className="font-semibold text-black text-sm">{tokenCode}</h3>
-        <h4 className="font-semibold text-[#7d7d7d] text-xs">
-          {propertyLocation}
-        </h4>
-      </div>
-    </div>
-  );
-};
 
 interface WatchListCardProps {
   tokenCode: string;

@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import meta from "../../src/assets/meta.png";
-import { Separator } from "../components/ui/separator";
-import { Search } from "lucide-react";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+// import { Separator } from "../components/ui/separator";
+// import { Search } from "lucide-react";
+// import { Input } from "../components/ui/input";
+// import { Label } from "../components/ui/label";
 import { checkUserApi } from "../api";
 import { useMutation } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
