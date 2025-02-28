@@ -9,6 +9,7 @@ import { checkUserApi } from "../api";
 import { useMutation } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
 import { useNavigate } from "react-router-dom";
+import SearchBar from "../components/common/SearchBar";
 
 const Landing = () => {
   const [isMetamaskInstalled, setIsMetamaskInstalled] =
@@ -27,8 +28,11 @@ const Landing = () => {
     },
     onError: (err) => {
       if (err.status === 404) {
+        navigate("/dashboard/");
         console.log("Doesn't have any account");
       } else {
+        navigate("/dashboard/");
+
         alert("An error occurred while checking user.");
       }
     },
@@ -97,42 +101,7 @@ const Landing = () => {
             Get Fractional Ownership of Land and Real Estate using TerraTokens
           </h5>
         </div>
-        <div className="w-[700px] bg-white h-20 rounded-md shadow-md border border-black border-opacity-20 flex flex-row items-center justify-between p-4">
-          <div className="flex flex-row items-center gap-8">
-            <div className="flex flex-col gap-0 p-4">
-              <Label className="text-xs font-extrabold text-black">
-                Location
-              </Label>
-              <Input
-                className="text-xs text-[#7d7d7d] font-normal border-none shadow-none -translate-x-3 translate-y-1 w-32 h-8"
-                placeholder="Enter location"
-              />
-            </div>
-            <Separator orientation="vertical" className="h-14 bg-[#E4E4E7]" />
-            <div className="flex flex-col gap-0 p-4">
-              <Label className="text-xs font-extrabold text-black">
-                Property Size
-              </Label>
-              <Input
-                className="text-xs text-[#7d7d7d] font-normal border-none shadow-none -translate-x-3 translate-y-1 w-28 h-8"
-                placeholder="4 Aana"
-              />
-            </div>
-            <Separator orientation="vertical" className="h-14 bg-[#E4E4E7]" />
-            <div className="flex flex-col gap-0 p-4">
-              <Label className="text-xs font-extrabold text-black">
-                Max Prize
-              </Label>
-              <Input
-                className="text-xs text-[#7d7d7d] font-normal border-none shadow-none -translate-x-3 translate-y-1 w-28 h-8"
-                placeholder="Rs 1200"
-              />
-            </div>
-          </div>
-          <Button variant="outline" className="h-full">
-            <Search />
-          </Button>
-        </div>
+        <SearchBar />
       </div>
     </div>
   );
