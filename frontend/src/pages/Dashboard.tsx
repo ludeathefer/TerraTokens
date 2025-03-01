@@ -1,4 +1,4 @@
-import { BellDot, Plus, Filter } from "lucide-react";
+import { BellDot, Plus, Filter, ChartColumn } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,37 +12,10 @@ import { Separator } from "../components/ui/separator";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Label } from "../components/ui/label";
 import LandInfo from "../components/common/LandInfo";
-
-interface TableToken {
-  tokenCode: string;
-  propertyLocation: string;
-  propertyType: "commercial" | "residential" | "agricultural" | "recreational";
-  boughtDate: string;
-  amount: number;
-  profitLoss: number;
-  tokenPrice: number;
-}
-
-const tokens: TableToken[] = [
-  {
-    tokenCode: "KTM-1154W5",
-    propertyLocation: "Kathmandu Ward 1",
-    propertyType: "commercial",
-    boughtDate: "2023-01-01",
-    amount: 10,
-    profitLoss: 50,
-    tokenPrice: 1000,
-  },
-  {
-    tokenCode: "KTM-1154W6",
-    propertyLocation: "Kathmandu Ward 2",
-    propertyType: "residential",
-    boughtDate: "2023-02-01",
-    amount: 20,
-    profitLoss: -20,
-    tokenPrice: 500,
-  },
-];
+import { useState } from "react";
+import { tokens, TableToken } from "../components/common/tokensData";
+import WatchlistDialog from "../components/dialogs/WatchListDialog";
+import Graphs from "../components/common/Graphs";
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -60,31 +33,94 @@ interface WatchListCardProps {
   propertyType: "commercial" | "residential" | "agricultural" | "recreational";
 }
 
-const WatchListCard = ({
-  tokenCode,
-  propertyLocation,
-  price,
-  profitAmount,
-  propertyType,
-}: WatchListCardProps) => {
-  return (
-    <div className="flex flex-row bg-white w-full h-16 border border-[#848484] border-opacity-25 rounded-md px-4 items-center justify-between">
-      <LandInfo
-        tokenCode={tokenCode}
-        propertyLocation={propertyLocation}
-        propertyType={propertyType}
-      />
-      <div className="flex flex-col pl-2">
-        <h3 className="font-bold text-black text-sm text-right">Rs {price}</h3>
-        <h4 className="font-bold text-[#179413] text-xs text-right">
-          +{profitAmount}%
-        </h4>
-      </div>
-    </div>
-  );
-};
+// const WatchListCard = ({
+//   tokenCode,
+//   propertyLocation,
+//   price,
+//   profitAmount,
+//   propertyType,
+// }: WatchListCardProps) => {
+//   return (
+//     <div className="flex flex-row bg-white w-full h-16 border border-[#848484] border-opacity-25 rounded-md px-4 items-center justify-between">
+//       <LandInfo
+//         tokenCode={tokenCode}
+//         propertyLocation={propertyLocation}
+//         propertyType={propertyType}
+//       />
+//       <div className="flex flex-col pl-2">
+//         <h3 className="font-bold text-black text-sm text-right">Rs {price}</h3>
+//         <h4 className="font-bold text-[#179413] text-xs text-right">
+//           +{profitAmount}%
+//         </h4>
+//       </div>
+//     </div>
+//   );
+// };
 
 const Dashboard = () => {
+  const [watchlist, setWatchlist] = useState<TableToken[]>([]);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
+
+  const toggleTokenSelection = (tokenCode: string) => {
+    setSelectedTokens((prevSelected) =>
+      prevSelected.includes(tokenCode)
+        ? prevSelected.filter((code) => code !== tokenCode)
+        : [...prevSelected, tokenCode]
+    );
+  };
+
+  const addToWatchlist = () => {
+    const selected = tokens.filter((token) =>
+      selectedTokens.includes(token.tokenCode)
+    );
+    setWatchlist(selected);
+    setDialogOpen(false);
+  };
+  const calculateDailyAverage = () => {
+    const days = 30; // Assume we have data for 30 days
+    const dailyAverages = [];
+
+    // Loop through each day (0 to 29 for 30 days)
+    for (let dayIndex = 0; dayIndex < days; dayIndex++) {
+      let totalPriceForDay = 0;
+
+      // Sum up all token prices for the given day
+      tokens.forEach((token) => {
+        totalPriceForDay += token.dailyPrices[dayIndex];
+      });
+
+      // Calculate the average for this day
+      const averagePriceForDay = totalPriceForDay / tokens.length;
+
+      // Push the result into the dailyAverages array
+      dailyAverages.push({
+        day: `Day ${dayIndex + 1}`,
+        value: averagePriceForDay,
+      });
+    }
+
+    return dailyAverages;
+  };
+  const chartData = calculateDailyAverage();
+  // const chartConfig: ChartConfig = {
+  //   commercial: {
+  //     label: "Commercial Token Value",
+  //     color: "#4CAF50", // Green color for commercial tokens
+  //   },
+  //   residential: {
+  //     label: "Residential Token Value",
+  //     color: "#2196F3", // Blue color for residential tokens
+  //   },
+  //   agricultural: {
+  //     label: "Agricultural Token Value",
+  //     color: "#FF9800", // Orange color for agricultural tokens
+  //   },
+  //   recreational: {
+  //     label: "Recreational Token Value",
+  //     color: "#9C27B0", // Purple color for recreational tokens
+  //   },
+  // };
   return (
     <div className="bg-[#FAFAFA] w-full h-screen p-6">
       {/* Main Container */}
@@ -143,7 +179,13 @@ const Dashboard = () => {
                     </Label>
                     <h1 className="text-3xl font-semibold text-black">1200</h1>
                   </div>
-                  <Separator orientation="vertical" className="h-full" />
+                  {/* For some reason, separator lai div maa rakhesi matra dekhiyo */}
+                  <div>
+                    <Separator
+                      orientation="vertical"
+                      className="h-full border-gray-500 "
+                    />
+                  </div>
                   <div className="flex flex-col items-start gap-y-1">
                     <Label className="font-semibold text-[#7d7d7d] text-xs">
                       Best Profit Land
@@ -156,26 +198,127 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
+              {/* Graph ko part: */}
+              <div className="w-full h-44 bg-white p-4 ">
+                <Graphs
+                  chartData={chartData}
+                  chartConfig={{
+                    commercial: {
+                      label: "Commercial Token Value",
+                      color: "#4CAF50", // Green color for commercial tokens
+                    },
+                    residential: {
+                      label: "Residential Token Value",
+                      color: "#2196F3", // Blue color for residential tokens
+                    },
+                    agricultural: {
+                      label: "Agricultural Token Value",
+                      color: "#FF9800", // Orange color for agricultural tokens
+                    },
+                    recreational: {
+                      label: "Recreational Token Value",
+                      color: "#9C27B0", // Purple color for recreational tokens
+                    },
+                  }}
+                />
+              </div>
             </div>
             {/* Watchlist */}
             <div className="w-3/12 bg-white h-full border border-[#848484] border-opacity-25 shadow-md rounded-md">
               <div className="flex flex-row items-center justify-between p-4">
                 <h1 className="font-semibold text-black text-xl">Watchlist</h1>
-                <Button className="h-9 w-9 border border-black border-opacity-10">
+                <Button
+                  className="h-9 w-9 border border-black border-opacity-10"
+                  onClick={() => setDialogOpen(true)}
+                >
                   <Plus />
                 </Button>
               </div>
-              <ScrollArea className="h-full px-3">
-                <WatchListCard
+              <ScrollArea className="h-48  rounded-2xl py-3 px-3 border-x-8 border-white ">
+                {/* <WatchListCard
                   tokenCode="KTM-1154W5"
                   propertyLocation="Kathmandu Ward 1"
                   price={1000}
                   profitAmount={50}
                   propertyType="commercial"
-                />
+                /> */}
+                {watchlist.map((token) => (
+                  <div className="flex flex-col">
+                    <div
+                      key={token.tokenCode}
+                      className="mb-2 flex flex-row gap-20 "
+                    >
+                      <LandInfo
+                        tokenCode={token.tokenCode}
+                        propertyLocation={token.propertyLocation}
+                        propertyType={token.propertyType}
+                      />
+                      <div className="flex flex-col items-end">
+                        <h3 className="font-bold text-black text-sm">
+                          Rs. {token.tokenPrice}
+                        </h3>
+                        <h4
+                          className={`font-bold text-xs ${
+                            token.profitLoss > 0
+                              ? "text-[#179413]"
+                              : "text-red-500"
+                          }`}
+                        >
+                          {token.profitLoss > 0
+                            ? `+${token.profitLoss}%`
+                            : `${token.profitLoss}%`}
+                        </h4>
+                      </div>
+                    </div>
+                    <Separator className="mb-4" />
+                  </div>
+                ))}
               </ScrollArea>
             </div>
           </div>
+          {/* Dialog Part for adding to watchlist */}
+          {/* <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Select Token for Watchlist</DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="h-48 px-3">
+                {tokens.map((token) => (
+                  <div
+                    key={token.tokenCode}
+                    className="flex flex-row items-center gap-3 p-2 border-b"
+                  >
+                    <Checkbox
+                      className="bg-red-600"
+                      checked={selectedTokens.includes(token.tokenCode)}
+                      onCheckedChange={() =>
+                        toggleTokenSelection(token.tokenCode)
+                      }
+                    />
+                    <LandInfo
+                      tokenCode={token.tokenCode}
+                      propertyLocation={token.propertyType}
+                      propertyType={token.propertyType}
+                    />
+                  </div>
+                ))}
+              </ScrollArea>
+              <DialogFooter>
+                <Button onClick={addToWatchlist}>Confirm</Button>
+                <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog> */}
+          {isDialogOpen && (
+            <WatchlistDialog
+              tokens={tokens}
+              selectedTokens={selectedTokens}
+              onToggleSelection={toggleTokenSelection}
+              onAddToWatchlist={addToWatchlist}
+              onClose={() => setDialogOpen(false)}
+            />
+          )}
+
           {/* Lower Part */}
           <div className="flex flex-col h-[41%] bg-white border border-[#848484] border-opacity-25 shadow-md rounded-md p-4">
             <div className="flex flex-row w-full p-3 items-center justify-between">

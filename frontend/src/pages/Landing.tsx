@@ -88,7 +88,14 @@ const Landing = () => {
               Login with Metamask
             </Button>
           ) : (
-            <></>
+            <Button
+              variant="outline"
+              className="bg-white"
+              onClick={connectMetamaskWallet}
+            >
+              <img src={meta} className="object-contain h-6 w-6" />
+              Please install Metamask
+            </Button>
           )}
         </div>
       </div>

@@ -15,6 +15,9 @@ export const router = createBrowserRouter([
     element: (
       // <PrivateRoute>
       <Landing />
+      // <Dashboard />
+      // <Login />
+      // <Signup />
       // </PrivateRoute>
     ),
   },
