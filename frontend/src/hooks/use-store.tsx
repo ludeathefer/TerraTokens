@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface AuthState {
-  sessionToken: string | null;
+  jwt: string | null;
   userPublicKey: string | null;
   setAuth: (token: string, publicKey: string) => void;
   clearAuth: () => void;
@@ -12,19 +12,19 @@ interface AuthState {
 export const useStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      sessionToken: null,
+      jwt: null,
       userPublicKey: null,
       setAuth: (token, publicKey) =>
         set({
-          sessionToken: token,
+          jwt: token,
           userPublicKey: publicKey,
         }),
       clearAuth: () =>
         set({
-          sessionToken: null,
+          jwt: null,
           userPublicKey: null,
         }),
-      isAuthenticated: () => !!get().sessionToken,
+      isAuthenticated: () => !!get().jwt,
     }),
     {
       name: "auth-storage",

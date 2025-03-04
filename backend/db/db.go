@@ -42,7 +42,6 @@ func AutoMigrate(db *sql.DB) error {
 					username VARCHAR(255) NOT NULL,
 					phone VARCHAR(20) NOT NULL UNIQUE,
 					email VARCHAR(255) UNIQUE NOT NULL,
-					password TEXT NOT NULL,
 					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 					updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);

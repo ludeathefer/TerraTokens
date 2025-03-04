@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/ludeathfer/TerraTokens/backend/config"
 	"github.com/ludeathfer/TerraTokens/backend/db"
@@ -79,6 +80,10 @@ func main() {
 	}
 
 	r := gin.Default()
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{"http://localhost:5173", "http://localhost:5174"}
+	r.Use(cors.New(corsConfig))
 	r.Use(middleware.GinContextToContextMiddleware())
 	r.Use(middleware.AuthMiddleware(cfg.JWT))
 

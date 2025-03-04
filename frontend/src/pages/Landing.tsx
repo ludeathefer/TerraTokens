@@ -5,11 +5,24 @@ import meta from "../../src/assets/meta.png";
 // import { Search } from "lucide-react";
 // import { Input } from "../components/ui/input";
 // import { Label } from "../components/ui/label";
-import { checkUserApi } from "../api";
-import { useMutation } from "@tanstack/react-query";
+// import { checkUserApi } from "../api";
+// import { useMutation } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/common/SearchBar";
+import { gql, useLazyQuery } from "@apollo/client";
+
+const LOGIN = gql`
+  query Login($publicKey: String!) {
+    login(publicKey: $publicKey) {
+      token
+      User {
+        id
+        publicKey
+      }
+    }
+  }
+`;
 
 const Landing = () => {
   const [isMetamaskInstalled, setIsMetamaskInstalled] =
@@ -17,26 +30,29 @@ const Landing = () => {
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const checkUserMutation = useMutation({
-    mutationFn: checkUserApi,
-    onSuccess: (data) => {
-      console.log(data);
-      if (data.sessionToken) {
-        useStore.getState().setAuth(data.sessionToken, account);
-        console.log("Has account");
-      }
-    },
-    onError: (err) => {
-      if (err.status === 404) {
-        navigate("/dashboard/");
-        console.log("Doesn't have any account");
-      } else {
-        navigate("/dashboard/");
+  const [login, { error }] = useLazyQuery(LOGIN);
+  if (error) {
+    navigate("/sign-up");
+  }
 
-        alert("An error occurred while checking user.");
-      }
-    },
-  });
+  // const checkUserMutation = useMutation({
+  //   mutationFn: checkUserApi,
+  //   onSuccess: (data) => {
+  //     console.log(data);
+  //     if (data.sessionToken) {
+  //       useStore.getState().setAuth(data.sessionToken, account);
+  //       console.log("Has account");
+  //     }
+  //   },
+  //   onError: (err) => {
+  //     if (err.status === 404) {
+  //       console.log("Doesn't have any account");
+  //     } else {
+  //       alert("An error occurred while checking user.");
+  //     }
+  //     navigate("/sign-up/");
+  //   },
+  // });
 
   useEffect(() => {
     if (window.ethereum) {
@@ -60,7 +76,7 @@ const Landing = () => {
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state
-      checkUserMutation.mutate(selectedAccount); // Pass the account to the mutation
+      login({ variables: { publicKey: selectedAccount } });
     } catch (error) {
       alert(`Something went wrong: ${error.message}`);
     }

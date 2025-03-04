@@ -13,6 +13,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Input } from "../components/ui/input";
+import { gql, useMutation } from "@apollo/client";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+const REGISTER = gql`
+  mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      publicKey
+      username
+    }
+  }
+`;
 
 const formSchema = z.object({
   metaMaskAccount: z.string(),
@@ -31,15 +45,56 @@ const Signup = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      metaMaskAccount: "",
       name: "",
       email: "",
       phone: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("submitted", values);
+  async function connectMetamaskWallet(): Promise<void> {
+    if (!window.ethereum) {
+      alert("MetaMask is not installed!");
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      const selectedAccount = accounts[0];
+      form.setValue("metaMaskAccount", selectedAccount);
+    } catch (error) {
+      alert(`Something went wrong: ${error.message}`);
+    }
   }
+  const navigate = useNavigate();
+
+  const [createUser, { data, error }] = useMutation(REGISTER);
+  if (data) {
+    navigate("/");
+  }
+
+  if (error) {
+    toast.error("Error signing in");
+  }
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    createUser({
+      variables: {
+        input: {
+          publicKey: values.metaMaskAccount,
+          username: values.name,
+          phone: values.phone,
+          email: values.email,
+        },
+      },
+    });
+  }
+
+  useEffect(() => {
+    connectMetamaskWallet();
+  }, []);
 
   return (
     <div className="w-screen h-screen bg-no-repeat bg-white flex flex-col">
@@ -59,14 +114,18 @@ const Signup = () => {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="metaMaskAccount"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-black">
                         Metamask Account
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Name" {...field} />
+                        <Input
+                          disabled
+                          placeholder="Metamask Public Key"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

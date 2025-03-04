@@ -64,7 +64,6 @@ type User {
   username: String!
   phone: String!
   email: String!
-  password: String!
   roles: [Role!]!
   createdAt: Time!
   updatedAt: Time!
@@ -95,7 +94,6 @@ input CreateUserInput {
   username: String!
   phone: String!
   email: String!
-  password: String!
 }
 
 input UpdateUserInput {
@@ -134,7 +132,7 @@ type LoginResponse {
 type Query {
   users: [User!]! @auth(requires: ["admin"])
   user(id: UUID!): User @auth
-  login(email: String!, password: String!): LoginResponse!
+  login(publicKey: String!): LoginResponse!
   landTokens: [LandToken!]! @auth
   landToken(id: UUID!): LandToken @auth
   sales: [Sale!]! @auth

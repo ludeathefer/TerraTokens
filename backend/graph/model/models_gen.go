@@ -44,7 +44,6 @@ type CreateUserInput struct {
 	Username  string `json:"username"`
 	Phone     string `json:"phone"`
 	Email     string `json:"email"`
-	Password  string `json:"password"`
 }
 
 type LandToken struct {
@@ -133,7 +132,6 @@ type User struct {
 	Username     string             `json:"username"`
 	Phone        string             `json:"phone"`
 	Email        string             `json:"email"`
-	Password     string             `json:"password"`
 	Roles        []*Role            `json:"roles"`
 	CreatedAt    time.Time          `json:"createdAt"`
 	UpdatedAt    time.Time          `json:"updatedAt"`
