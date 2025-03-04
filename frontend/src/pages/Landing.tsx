@@ -30,10 +30,28 @@ const Landing = () => {
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
 
+<<<<<<< Updated upstream
   const [login, { error }] = useLazyQuery(LOGIN);
   if (error) {
     navigate("/sign-up");
   }
+=======
+  const checkUserMutation = useMutation({
+    mutationFn: checkUserApi,
+    onSuccess: (data) => {
+      console.log(data);
+      if (data.sessionToken) {
+        useStore.getState().setAuth(data.sessionToken, account);
+        console.log("Has account");
+      }
+    },
+    onError: (err) => {
+      if (err.status === 404) {
+        navigate("/dashboard/");
+        console.log("Doesn't have any account");
+      } else {
+        navigate("/sign-up/");
+>>>>>>> Stashed changes
 
   // const checkUserMutation = useMutation({
   //   mutationFn: checkUserApi,

@@ -54,8 +54,8 @@ const SidebarButton: FC<SidebarButtonProps> = ({
           "w-full flex justify-start",
           sidebarExpanded ? "" : "rounded-full justify-center",
           isActive
-            ? "dark:text-[#0C8CE9] border border-[#C8C8C8] dark:bg-[#F1F1F1]  dark:hover:bg-[#F1F1F1] "
-            : " dark:hover:bg-[#F1F1F1] dark:hover:text-black "
+            ? "text-[#0C8CE9] border border-[#C8C8C8] dark:bg-[#F1F1F1]  dark:hover:bg-[#F1F1F1] "
+            : " hover:bg-[#F1F1F1] dark:hover:text-black "
         )}
       >
         <Icon className={cn(sidebarExpanded ? "mr-2 h-4 w-4" : "")} />

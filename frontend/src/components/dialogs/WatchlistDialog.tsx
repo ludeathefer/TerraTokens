@@ -26,8 +26,10 @@ const WatchlistDialog = ({
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
-        <DialogTitle>Select Token for Watchlist</DialogTitle>
-        <ScrollArea className="h-60 px-3 rounded-2xl bg-white">
+        <DialogTitle className="text-black">
+          Select Token for Watchlist
+        </DialogTitle>
+        <ScrollArea className="h-60 px-3 rounded-2xl bg-white border shadow-sm ">
           {tokens.map((token) => (
             <div className="flex flex-col">
               <div
