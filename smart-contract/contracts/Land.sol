@@ -125,6 +125,36 @@ contract Land is ERC1155, Ownable {
         emit TokensListingCancelled(landId, msg.sender, amount, pricePerToken);
     }
 
+    function updateTokenListing(
+        uint256 landId,
+        uint256 amount,
+        uint256 pricePerToken
+    ) public {
+        require(isFractionalized[landId], "Land must be fractionalized first");
+        require(
+            balanceOf(msg.sender, landId) >= amount,
+            "Insufficient token balance"
+        );
+        require(pricePerToken > 0, "Price must be greater than 0");
+        require(amount > 0, "Amount must be greater than 0");
+
+        SaleOrder storage listing = activeSaleListings[msg.sender];
+        require(
+            listing.amount > 0,
+            "Does not have an active listing. List Token for sale."
+        );
+        require(listing.landId == landId, "Land ID doesn't match listing");
+        require(
+            listing.seller == msg.sender,
+            "Only the seller can update the listing"
+        );
+
+        listing.amount = amount;
+        listing.pricePerToken = pricePerToken;
+
+        emit TokensListedForSale(landId, msg.sender, amount, pricePerToken);
+    }
+
     function purchaseTokens(
         uint256 landId,
         SaleOrder[] calldata orders
