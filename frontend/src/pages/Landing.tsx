@@ -1,57 +1,34 @@
 import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import meta from "../../src/assets/meta.png";
-// import { Separator } from "../components/ui/separator";
-// import { Search } from "lucide-react";
-// import { Input } from "../components/ui/input";
-// import { Label } from "../components/ui/label";
-// import { checkUserApi } from "../api";
-// import { useMutation } from "@tanstack/react-query";
+import { Separator } from "../components/ui/separator";
+import { Search } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { checkUserApi } from "../api";
+import { useMutation } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/common/SearchBar";
 import { gql, useLazyQuery } from "@apollo/client";
 
-const LOGIN = gql`
-  query Login($publicKey: String!) {
-    login(publicKey: $publicKey) {
-      token
-      User {
-        id
-        publicKey
-      }
-    }
-  }
-`;
+// const LOGIN = gql`
+//   query Login($publicKey: String!) {
+//     login(publicKey: $publicKey) {
+//       token
+//       User {
+//         id
+//         publicKey
+//       }
+//     }
+//   }
+// `;
 
 const Landing = () => {
   const [isMetamaskInstalled, setIsMetamaskInstalled] =
     useState<boolean>(false);
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
-
-<<<<<<< Updated upstream
-  const [login, { error }] = useLazyQuery(LOGIN);
-  if (error) {
-    navigate("/sign-up");
-  }
-=======
-  const checkUserMutation = useMutation({
-    mutationFn: checkUserApi,
-    onSuccess: (data) => {
-      console.log(data);
-      if (data.sessionToken) {
-        useStore.getState().setAuth(data.sessionToken, account);
-        console.log("Has account");
-      }
-    },
-    onError: (err) => {
-      if (err.status === 404) {
-        navigate("/dashboard/");
-        console.log("Doesn't have any account");
-      } else {
-        navigate("/sign-up/");
->>>>>>> Stashed changes
 
   // const checkUserMutation = useMutation({
   //   mutationFn: checkUserApi,
@@ -64,11 +41,12 @@ const Landing = () => {
   //   },
   //   onError: (err) => {
   //     if (err.status === 404) {
+  //       navigate("/dashboard/");
   //       console.log("Doesn't have any account");
   //     } else {
   //       alert("An error occurred while checking user.");
+  //       navigate("/sign-up/");
   //     }
-  //     navigate("/sign-up/");
   //   },
   // });
 
@@ -94,7 +72,7 @@ const Landing = () => {
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state
-      login({ variables: { publicKey: selectedAccount } });
+      // login({ variables: { publicKey: selectedAccount } });
     } catch (error) {
       alert(`Something went wrong: ${error.message}`);
     }
