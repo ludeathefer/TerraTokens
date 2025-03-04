@@ -14,7 +14,7 @@ import { Label } from "../components/ui/label";
 import LandInfo from "../components/common/LandInfo";
 import { useState } from "react";
 import { tokens, TableToken } from "../components/common/tokensData";
-import WatchlistDialog from "../components/dialogs/WatchListDialog";
+import WatchlistDialog from "../components/dialogs/WatchlistDialog";
 import Graphs from "../components/common/Graphs";
 
 interface WatchListCardProps {
