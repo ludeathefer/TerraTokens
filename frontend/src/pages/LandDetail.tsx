@@ -17,6 +17,14 @@ import Graphs from "../components/common/Graphs";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import MapComponent from "../components/common/MapComponent";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -61,6 +69,58 @@ const WatchListCard = ({
 const Dashboard = () => {
   const { tokenId } = useParams(); // Get the tokenID from the URL
   const [token, setToken] = useState(null);
+  const [tokensForSale, setTokensForSale] = useState([
+    {
+      tokenCode: "KTM-1154W8",
+      propertyLocation: "Kathmandu Ward 8",
+      propertyType: "residential",
+      boughtDate: "2025-03-03",
+      amount: 20,
+      costPrice: 490, // Assume a costPrice
+      tokenPrice: 500,
+      profitLoss: -20, // Will be recalculated
+      size: 4,
+    },
+    {
+      tokenCode: "KTM-1154W9",
+      propertyLocation: "Kathmandu Ward 9",
+      propertyType: "residential",
+      boughtDate: "2025-03-02",
+      amount: 30,
+      costPrice: 810, // Assume a costPrice
+      tokenPrice: 800,
+      profitLoss: 13, // Will be recalculated
+      size: 4,
+    },
+  ]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedToken, setSelectedToken] = useState(null);
+  const [isTokenSelected, setIsTokenSelected] = useState(false);
+  const [numTokensOwned, setNumTokensOwned] = useState(0);
+  const [numTokensForSale, setNumTokensForSale] = useState(0);
+  const [isBuyDialogOpen, setIsBuyDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTokenForAction, setSelectedTokenForAction] = useState(null);
+  const [numTokensToBuy, setNumTokensToBuy] = useState(0);
+  const [numTokensToEdit, setNumTokensToEdit] = useState(0);
+  const [pricePerToken, setPricePerToken] = useState(0);
+
+  const handleAddTokenForSale = () => {
+    if (numTokensForSale > numTokensOwned) {
+      alert("You cannot enlist more tokens than you own.");
+      return;
+    }
+
+    const tokenWithDetails = {
+      ...selectedToken,
+      numTokensOwned,
+      numTokensForSale,
+    };
+
+    setTokensForSale([...tokensForSale, tokenWithDetails]);
+    setIsTokenSelected(false);
+    setIsDialogOpen(false);
+  };
 
   useEffect(() => {
     // Fetch the token data based on the tokenID
@@ -77,6 +137,52 @@ const Dashboard = () => {
     return <div>Loading...</div>; // Handle the case where the token is not found
   }
   // const chartData = token.
+
+  const handleBuyTokens = () => {
+    // Update the state to reflect the purchase
+    const updatedTokensForSale = tokensForSale.map((token) => {
+      if (token.tokenCode === selectedTokenForAction.tokenCode) {
+        return {
+          ...token,
+          amount: token.amount - numTokensToBuy,
+        };
+      }
+      return token;
+    });
+
+    setTokensForSale(updatedTokensForSale);
+    setIsBuyDialogOpen(false);
+  };
+
+  const handleEditTokens = () => {
+    // Update the state to reflect the edit
+    const updatedTokensForSale = tokensForSale.map((token) => {
+      if (token.tokenCode === selectedTokenForAction.tokenCode) {
+        return {
+          ...token,
+          amount: numTokensToEdit,
+          tokenPrice: pricePerToken,
+        };
+      }
+      return token;
+    });
+
+    setTokensForSale(updatedTokensForSale);
+    setIsEditDialogOpen(false);
+  };
+
+  const handleRowClick = (token, index) => {
+    // Determine if the click was on "Buy" or "Edit"
+    const action = event.target.textContent;
+
+    if (action === "Buy") {
+      setSelectedTokenForAction(token);
+      setIsBuyDialogOpen(true);
+    } else if (action === "Edit") {
+      setSelectedTokenForAction(token);
+      setIsEditDialogOpen(true);
+    }
+  };
 
   return (
     <div className="bg-[#FAFAFA] w-full h-screen p-6">
@@ -251,9 +357,164 @@ const Dashboard = () => {
                     <h1 className="font-medium text-black text-md">
                       Tokens For Sale
                     </h1>
-                    <Button className="h-9 w-9 border border-black border-opacity-10">
-                      <Plus />
-                    </Button>
+                    {/* Add tokens to sale dialog */}
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="h-9 w-9 border border-black border-opacity-10"
+                          // onClick={() => handleAddTokenForSale(token)}
+                        >
+                          <Plus />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Select a Token to Add</DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="h-64 bg-white">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="text-xs font-medium">
+                                  Token Code
+                                </TableHead>
+                                <TableHead className="text-xs font-medium">
+                                  Location
+                                </TableHead>
+                                <TableHead className="text-xs font-medium">
+                                  Type
+                                </TableHead>
+                                <TableHead className="text-xs font-medium">
+                                  Actions
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {tokens.map((token) => (
+                                <TableRow key={token.tokenCode}>
+                                  <TableCell className="text-black text-sm font-normal">
+                                    {token.tokenCode}
+                                  </TableCell>
+                                  <TableCell className="text-black text-sm font-normal">
+                                    {token.propertyLocation}
+                                  </TableCell>
+                                  <TableCell className="text-black text-sm font-normal">
+                                    {token.propertyType}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      onClick={() => {
+                                        // Open a nested dialog or modal for input fields
+                                        setIsTokenSelected(true);
+                                        setSelectedToken(token);
+                                      }}
+                                    >
+                                      Select
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </ScrollArea>
+                      </DialogContent>
+                    </Dialog>
+                    {/* After pressing select, specify no of tokens dialog */}
+                    <Dialog
+                      open={isTokenSelected}
+                      onOpenChange={setIsTokenSelected}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Enlist Tokens for Sale</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-4">
+                          <div>
+                            <Label>No of Tokens You Own</Label>
+                            <Input
+                              type="number"
+                              value={numTokensOwned}
+                              onChange={(e) =>
+                                setNumTokensOwned(Number(e.target.value))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label>No of Tokens to Enlist for Sale</Label>
+                            <Input
+                              type="number"
+                              value={numTokensForSale}
+                              onChange={(e) =>
+                                setNumTokensForSale(Number(e.target.value))
+                              }
+                            />
+                          </div>
+                          <Button onClick={handleAddTokenForSale}>
+                            Add to Sale List
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    {/* If buy is pressed */}
+                    <Dialog
+                      open={isBuyDialogOpen}
+                      onOpenChange={setIsBuyDialogOpen}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Buy Tokens</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-4">
+                          <div>
+                            <Label>Number of Tokens to Buy</Label>
+                            <Input
+                              type="number"
+                              value={numTokensToBuy}
+                              onChange={(e) =>
+                                setNumTokensToBuy(Number(e.target.value))
+                              }
+                            />
+                          </div>
+                          <Button onClick={handleBuyTokens}>Buy</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    {/* If edit is pressed dialog */}
+                    <Dialog
+                      open={isEditDialogOpen}
+                      onOpenChange={setIsEditDialogOpen}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Tokens</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-4">
+                          <div>
+                            <Label>Number of Tokens to List</Label>
+                            <Input
+                              type="number"
+                              value={numTokensToEdit}
+                              onChange={(e) =>
+                                setNumTokensToEdit(Number(e.target.value))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label>Price Per Token</Label>
+                            <Input
+                              type="number"
+                              value={pricePerToken}
+                              onChange={(e) =>
+                                setPricePerToken(Number(e.target.value))
+                              }
+                            />
+                          </div>
+                          <Button onClick={handleEditTokens}>
+                            Save Changes
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                   <ScrollArea className="h-64 px-3">
                     <Table>
@@ -271,8 +532,11 @@ const Dashboard = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {tokens.map((token, index) => (
-                          <TableRow key={index}>
+                        {tokensForSale.map((token, index) => (
+                          <TableRow
+                            key={index}
+                            onClick={() => handleRowClick(token, index)}
+                          >
                             <TableCell className="text-black text-sm font-normal">
                               {token.amount}
                             </TableCell>
@@ -280,8 +544,14 @@ const Dashboard = () => {
                               Rs {token.tokenPrice}
                             </TableCell>
                             <TableCell>
-                              <Label className="text-[#0c8ce9] text-sm font-bold">
-                                Buy
+                              <Label
+                                className={`${
+                                  token.profitLoss > 0
+                                    ? "text-red-500"
+                                    : "text-[#0c8ce9]"
+                                } text-sm font-bold`}
+                              >
+                                {token.profitLoss > 0 ? "Edit" : "Buy"}
                               </Label>
                             </TableCell>
                           </TableRow>
