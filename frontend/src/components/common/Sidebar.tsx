@@ -14,7 +14,7 @@ import { Link } from "react-router-dom";
 import { LucideIcon } from "lucide-react"; // Import for Lucide icon type
 
 const sidebarItems = [
-  { to: "/", icon: House, label: "Dashboard" },
+  { to: "/dashboard", icon: House, label: "Dashboard" },
   { to: "/marketplace", icon: FileSpreadsheet, label: "Marketplace" },
   // {to:"/transaction-history"}
   { to: "/history", icon: Flower, label: "History" },
@@ -86,7 +86,7 @@ export const Sidebar: FC<SidebarProps> = ({
               variant="ghost"
               onClick={() => setSidebarExpanded(!sidebarExpanded)}
               className={cn(
-                "w-full flex justify-start dark:hover:bg-[#F1F1F1]",
+                "w-full flex justify-start dark:hover:bg-[#F1F1F1] dark:hover:text-black",
                 sidebarExpanded ? "" : "rounded-full justify-center"
               )}
             >
@@ -95,7 +95,7 @@ export const Sidebar: FC<SidebarProps> = ({
                 className={
                   sidebarExpanded
                     ? "block text-lg font-bold tracking-tight"
-                    : "hidden"
+                    : "hidden "
                 }
               >
                 TerraTokens

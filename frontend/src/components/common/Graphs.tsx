@@ -33,7 +33,7 @@ interface ChartConfig {
   };
 }
 
-interface ChartDataPoint {
+export interface ChartDataPoint {
   day: string; // Add day for each data point
   value: number; // Token value for that day
 }
@@ -45,7 +45,7 @@ interface Props {
 
 const Graphs = (props: Props) => {
   return (
-    <ChartContainer config={props.chartConfig} className="h-40 w-full">
+    <ChartContainer config={props.chartConfig} className="h-full w-full">
       <ResponsiveContainer width="100%" height="20%">
         <AreaChart
           data={props.chartData}
@@ -54,13 +54,13 @@ const Graphs = (props: Props) => {
             right: 10,
           }}
         >
-          <CartesianGrid vertical={false} />
+          <CartesianGrid vertical={false} horizontal={false} />
           <XAxis
             dataKey="day"
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            tickFormatter={(value) => value.slice(0, 3)} // Shorten day names
+            // tickFormatter={(value) => value.slice(0, 3)} // Shorten day names
           />
           <YAxis
             domain={["auto", "auto"]}

@@ -13,42 +13,50 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { Label } from "../components/ui/label";
 import LandInfo from "../components/common/LandInfo";
 import { DatePickerWithRange } from "../components/ui/date-picker";
-import React from "react";
-
-interface TableToken {
-  tokenCode: string;
-  propertyLocation: string;
-  propertyType: "commercial" | "residential" | "agricultural" | "recreational";
-  boughtDate: string;
-  amount: number;
-  profitLoss: number;
-  tokenPrice: number;
-}
-
-const transactions = [
-  {
-    tokenCode: "KTM-1154W5",
-    propertyLocation: "Kathmandu Ward 1",
-    propertyType: "commercial",
-    transactionDate: "2023-01-01",
-    transactionType: "Bought",
-    amount: 10,
-    tokenPrice: 1000,
-    profitLoss: 50,
-  },
-  {
-    tokenCode: "KTM-1154W6",
-    propertyLocation: "Kathmandu Ward 2",
-    propertyType: "residential",
-    transactionDate: "2023-02-01",
-    transactionType: "Sold",
-    amount: 20,
-    tokenPrice: 500,
-    profitLoss: -20,
-  },
-];
+import React, { useState, useEffect } from "react";
+import { TableToken, tokens } from "../components/common/tokensData";
+import transactions from "../components/common/transactions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import FilterDialog from "../components/dialogs/FilterDialog";
 
 const TransactionHistory = () => {
+  const [filters, setFilters] = useState({});
+  const [filteredTransactions, setFilteredTransactions] =
+    useState(transactions);
+
+  const openFilterDialog = () => {
+    console.log("Hello");
+  };
+
+  const handleApplyFilters = (appliedFilters) => {
+    setFilters(appliedFilters);
+    const filtered = transactions.filter((transaction) => {
+      const matchesTransactionType = appliedFilters.transactionType
+        ? transaction.transactionType === appliedFilters.transactionType
+        : true;
+      const matchesPriceRange =
+        (!appliedFilters.minPrice ||
+          transaction.tokenPrice >= appliedFilters.minPrice) &&
+        (!appliedFilters.maxPrice ||
+          transaction.tokenPrice <= appliedFilters.maxPrice);
+      const matchesProfitLoss = appliedFilters.profitLoss
+        ? (appliedFilters.profitLoss === "profit" &&
+            transaction.profitLoss > 0) ||
+          (appliedFilters.profitLoss === "loss" && transaction.profitLoss <= 0)
+        : true;
+
+      return matchesTransactionType && matchesPriceRange && matchesProfitLoss;
+    });
+
+    setFilteredTransactions(filtered);
+  };
+
   return (
     <div className="bg-[#FAFAFA] w-full h-screen p-6">
       {/* Main Container */}
@@ -66,7 +74,7 @@ const TransactionHistory = () => {
 
           <Button
             variant="outline"
-            className="h-12  bg-white border-black border-opacity-15 shadow-sm"
+            className="h-12 bg-white border-black border-opacity-15 shadow-sm"
           >
             <ArrowRightFromLine />
             Export
@@ -77,13 +85,18 @@ const TransactionHistory = () => {
         {/* Content Section */}
         <div className="flex flex-col gap-3 h-full">
           <div className="flex flex-row w-full gap-4 items-center">
-            <Button className="h-10 bg-none border-black border-opacity-15">
-              <Filter />
-              Filter
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="h-10 bg-none border-black border-opacity-15">
+                  <Filter />
+                  Filter
+                </Button>
+              </DialogTrigger>
+              <FilterDialog onApplyFilters={handleApplyFilters} />
+            </Dialog>
             <DatePickerWithRange />
           </div>
-          <ScrollArea className="w-full h-full">
+          <ScrollArea className="w-full h-[31rem]">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -104,7 +117,7 @@ const TransactionHistory = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction, index) => (
+                {filteredTransactions.map((transaction, index) => (
                   <React.Fragment key={index}>
                     <TableRow>
                       <TableCell>

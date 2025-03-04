@@ -25,7 +25,7 @@ const WatchlistDialog = ({
 }: WatchlistDialogProps) => {
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="bg-red-500 !important">
+      <DialogContent>
         <DialogTitle>Select Token for Watchlist</DialogTitle>
         <ScrollArea className="h-60 px-3 rounded-2xl bg-white">
           {tokens.map((token) => (
