@@ -99,6 +99,89 @@ describe("Land Contract", function () {
     });
   });
 
+  describe("Updating Token Listings", function () {
+    beforeEach(async function () {
+      await land.fractionalizeLand("ipfs://metadata", 100);
+      await land.fractionalizeLand("ipfs://metadata1", 100);
+      await land.transferFractionalTokens(addr1.address, 1, 50);
+      await land.transferFractionalTokens(addr2.address, 1, 50);
+      await land.transferFractionalTokens(addr2.address, 2, 50);
+    });
+
+    it("Should not allow updating listing if no active listing exists", async function () {
+      // addr1 hasn't listed any tokens for sale yet
+      await expect(
+        land.connect(addr1).updateTokenListing(1, 20, ethers.parseEther("1"))
+      ).to.be.revertedWith("Does not have an active listing. List Token for sale.");
+    });
+
+    it("Should allow seller to update their listing", async function () {
+      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+
+      // Update the listing
+      await land.connect(addr1).updateTokenListing(1, 30, ethers.parseEther("2"));
+
+      const updatedListing = await land.activeSaleListings(addr1.address);
+      expect(updatedListing.seller).to.equal(addr1.address);
+      expect(updatedListing.landId).to.equal(1);
+      expect(updatedListing.amount).to.equal(30);
+      expect(updatedListing.pricePerToken).to.equal(ethers.parseEther("2"));
+    });
+
+    it("Should emit TokensListedForSale event on updating listing", async function () {
+      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+
+      await expect(land.connect(addr1).updateTokenListing(1, 30, ethers.parseEther("2")))
+        .to.emit(land, "TokensListedForSale")
+        .withArgs(1, addr1.address, 30, ethers.parseEther("2"));
+    });
+
+    it("Should not allow updating listing with more tokens than owned", async function () {
+      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+
+      await expect(
+        land.connect(addr1).updateTokenListing(1, 60, ethers.parseEther("2"))
+      ).to.be.revertedWith("Insufficient token balance");
+    });
+
+    it("Should not allow listing with zero price", async function () {
+      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+
+      await expect(
+        land.connect(addr1).updateTokenListing(1, 20, 0)
+      ).to.be.revertedWith("Price must be greater than 0");
+    });
+
+    it("Should not allow updating listing to a zero amount", async function () {
+      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+
+      await expect(
+        land.connect(addr1).updateTokenListing(1, 0, ethers.parseEther("1"))
+      ).to.be.revertedWith("Amount must be greater than 0");
+    });
+
+    it("Should not allow updating listing to an invalid price", async function () {
+      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+
+      await expect(
+        land.connect(addr1).updateTokenListing(1, 20, ethers.parseEther("0"))
+      ).to.be.revertedWith("Price must be greater than 0");
+    });
+
+    it("Should not allow token where landID doesn't match", async function () {
+
+      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land.connect(addr2).listTokensForSale(2, 20, ethers.parseEther("1"));
+
+      await expect(
+        land.connect(addr2).updateTokenListing(1, 20, ethers.parseEther("2"))
+      ).to.be.revertedWith("Land ID doesn't match listing");
+    });
+
+
+  });
+
+
   describe("Cancelling Token Listings", function () {
     beforeEach(async function () {
       await land.fractionalizeLand("ipfs://metadata", 100);

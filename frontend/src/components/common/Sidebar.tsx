@@ -16,7 +16,9 @@ import { LucideIcon } from "lucide-react"; // Import for Lucide icon type
 const sidebarItems = [
   { to: "/", icon: House, label: "Dashboard" },
   { to: "/marketplace", icon: FileSpreadsheet, label: "Marketplace" },
-  // { to: "/history", icon: Flower, label: "History" },
+  // {to:"/transaction-history"}
+  { to: "/history", icon: Flower, label: "History" },
+  // {to:"/land-detail"}
 ];
 
 import { FC } from "react";
@@ -52,8 +54,8 @@ const SidebarButton: FC<SidebarButtonProps> = ({
           "w-full flex justify-start",
           sidebarExpanded ? "" : "rounded-full justify-center",
           isActive
-            ? "dark:bg-green-700 dark:hover:bg-green-700"
-            : " dark:hover:bg-green-700/20"
+            ? "dark:text-[#0C8CE9] border border-[#C8C8C8] dark:bg-[#F1F1F1]  dark:hover:bg-[#F1F1F1] "
+            : " dark:hover:bg-[#F1F1F1] dark:hover:text-black "
         )}
       >
         <Icon className={cn(sidebarExpanded ? "mr-2 h-4 w-4" : "")} />
@@ -70,14 +72,12 @@ export const Sidebar: FC<SidebarProps> = ({
   activePage,
 }) => {
   return (
-    <div
-      className={cn("pb-12 bg-zinc-900/20 border-r border-white/10", className)}
-    >
+    <div className={cn("pb-12 bg-white border-r border-white/10", className)}>
       <div className="space-y-4 py-4 min-w-20">
         <div className="px-4 py-2">
           <div
             className={cn(
-              "flex flex-row items-center mb-1",
+              "flex flex-row items-center mb-1 text-black ",
               sidebarExpanded ? "" : "justify-center"
             )}
           >
@@ -86,7 +86,7 @@ export const Sidebar: FC<SidebarProps> = ({
               variant="ghost"
               onClick={() => setSidebarExpanded(!sidebarExpanded)}
               className={cn(
-                "w-full flex justify-start dark:hover:bg-transparent",
+                "w-full flex justify-start dark:hover:bg-[#F1F1F1]",
                 sidebarExpanded ? "" : "rounded-full justify-center"
               )}
             >
@@ -102,7 +102,7 @@ export const Sidebar: FC<SidebarProps> = ({
               </h2>
             </Button>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 text-black ">
             {sidebarItems.map((item, index) => (
               <div key={index}>
                 <SidebarButton

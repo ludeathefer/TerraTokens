@@ -1,432 +1,267 @@
-//@ts-nocheck
-import { useEffect, useState } from "react";
-import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
+import { BellDot, Plus, Filter, Star, GitCompare } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import { Button } from "../components/ui/button";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { ScrollArea } from "../components/ui/scroll-area";
-import { DealTokenDialog } from "../components/dialogs/DealTokenDialog";
 import { Separator } from "../components/ui/separator";
-import Graphs from "../components/common/Graphs";
-import { cn } from "../lib/utils";
-import TokenTable from "../components/common/TokenTable";
-import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
-import {
-  buyTokensApi,
-  getLandTokenDetailsApi,
-  getTokensForSaleApi,
-  getTokensPurchasedApi,
-  sellTokensApi,
-} from "../api";
-import { ethers } from "ethers";
-import { contractABI } from "../contractABI.js";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { Label } from "../components/ui/label";
+import LandInfo, { getIcon } from "../components/common/LandInfo";
 
-const contractAddress = "0x301D99bAa8bAf1e6D4404526d904f7c238d8D9Fa";
+const tokens = [
+  {
+    amount: 10,
+    pricePerToken: 1000,
+  },
+  {
+    amount: 20,
+    pricePerToken: 500,
+  },
+];
 
-const LandDetail = () => {
-  const [metadataURI, setMetadataURI] = useState("");
-  const [numberOfFractions, setNumberOfFractions] = useState(0);
-  const [status, setStatus] = useState("");
-  const [landId, setLandId] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { tokenId } = useParams();
-  const [isSellDialogOpen, setIsSellDialogOpen] = useState<boolean>(false);
-  const [isBuyDialogOpen, setIsBuyDialogOpen] = useState<boolean>(false);
+interface WatchListCardProps {
+  tokenCode: string;
+  propertyLocation: string;
+  price: number;
+  profitAmount: number;
+  propertyType: "commercial" | "residential" | "agricultural" | "recreational";
+}
 
-  const queryClient = useQueryClient();
+interface WatchListCardProps {
+  tokenCode: string;
+  propertyLocation: string;
+  price: number;
+  profitAmount: number;
+  propertyType: "commercial" | "residential" | "agricultural" | "recreational";
+}
 
-  const buyTokenMutation = useMutation({
-    mutationFn: buyTokensApi,
-    onSuccess: () => {
-      queryClient.invalidateQueries(["tokens-to-refresh"]);
-      toast.success("Bought tokens successfully.");
-    },
-    onError: () => toast.error("Error buying tokens."),
-  });
-
-  const sellTokenMutation = useMutation({
-    mutationFn: sellTokensApi,
-    onSuccess: () => {
-      queryClient.invalidateQueries(["tokens-to-refresh"]);
-      toast.success("Sold tokens successfully.");
-    },
-    onError: () => toast.error("Error selling tokens."),
-  });
-
-  const [onSaleTokenDetailsQuery, purchasedTokenDetailsQuery] = useQueries({
-    queries: [
-      {
-        queryKey: ["tokens-to-refresh", "tokenId"],
-        queryFn: getTokensForSaleApi,
-        select: (data) => data.find((token) => token.land_hash === tokenId),
-      },
-      {
-        queryKey: ["tokens-to-refresh", "purchase"],
-        queryFn: getTokensPurchasedApi,
-        select: (data) =>
-          data.reduce((sum, item) => {
-            if (item.land_hash === tokenId) {
-              return sum + (item.number_of_tokens || 0);
-            }
-            return sum;
-          }, 0),
-      },
-    ],
-  });
-
-  const provider = new ethers.providers.JsonRpcProvider(
-    "http://127.0.0.1:8545/"
-  );
-
-  // Create a wallet instance
-  const privateKey =
-    "ad200aff30fea5d027fea0e4159625c9584b276a5124512a2f26aa9d5928da20"; // Use environment variable
-  const wallet = new ethers.Wallet(privateKey, provider);
-
-  const contract = new ethers.Contract(contractAddress, contractABI, wallet);
-  useEffect(() => {
-    const listener = async (landId, numberOfFractions, metadataURI) => {
-      console.log(`Land fractionalized!`);
-      console.log(`Land ID: ${landId.toString()}`);
-      console.log(`Number of Fractions: ${numberOfFractions.toString()}`);
-      console.log(`Metadata URI: ${metadataURI}`);
-      setLandId(landId.toString());
-
-      let landDetail;
-      try {
-        landDetail = JSON.parse(metadataURI);
-      } catch (error) {
-        console.error("Failed to parse metadataURI:", error);
-        return;
-      }
-
-      const token = wallet.address;
-      const dateCreated = new Date().toISOString().split("T")[0];
-
-      const postData = {
-        land_detail: landDetail,
-        token,
-        no_of_tokens: numberOfFractions,
-        date_created: dateCreated,
-      };
-
-      console.log("Posting data:", postData);
-
-      // try {
-      //   const response = await fetch("http://localhost:3000/api/add_land", {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify(postData),
-      //   });
-
-      //   if (!response.ok) throw new Error("Failed to add land");
-
-      //   console.log("Land added successfully:", await response.json());
-      // } catch (error) {
-      //   console.error("Error adding land:", error);
-      // }
-    };
-
-    contract.on("LandFractionalized", listener);
-
-    return () => {
-      contract.off("LandFractionalized", listener);
-    };
-  }, []);
-
-  async function fractionalizeLand(
-    price,
-    city,
-    ward,
-    street_number,
-    plot_number,
-    land_class
-  ) {
-    let metadataURI = JSON.stringify({
-      city,
-      ward,
-      street_number,
-      plot_number,
-      land_class,
-    });
-
-    let numberOfFractions = Math.floor(price / 1000); // Ensure it is an integer and greater than zero
-
-    if (!metadataURI || numberOfFractions <= 0) {
-      setStatus("Please enter valid metadata URI and number of fractions.");
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      const currentNonce = await provider.getTransactionCount(wallet.address); // Fetch current nonce
-      const tx = await contract.fractionalizeLand(
-        metadataURI,
-        numberOfFractions,
-        { nonce: currentNonce }
-      );
-
-      console.log("Transaction sent! Waiting for confirmation...");
-      await tx.wait();
-
-      console.log("Transaction confirmed!", tx.hash);
-      setStatus("Land fractionalized successfully!");
-    } catch (error) {
-      console.error("Error fractionalizing land:", error);
-      setStatus(`Error: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  }
-
-  console.log(tokenDetailsQuery.data);
-
-  const graphArray = [
-    {
-      graphLabel: "Daily Prices",
-      graphData: [
-        { day: "1", value: 1450 },
-        { day: "2", value: 1820 },
-        { day: "3", value: 3210 },
-        { day: "4", value: 2980 },
-        { day: "5", value: 2100 },
-        { day: "6", value: 4350 },
-        { day: "7", value: 3980 },
-        { day: "8", value: 2760 },
-        { day: "9", value: 4890 },
-        { day: "10", value: 3520 },
-        { day: "11", value: 4310 },
-        { day: "12", value: 4120 },
-      ],
-    },
-    {
-      graphLabel: "Weekly Prices",
-      graphData: [
-        { day: "1", value: 5800 },
-        { day: "2", value: 6210 },
-        { day: "3", value: 7100 },
-        { day: "4", value: 6450 },
-        { day: "5", value: 6890 },
-        { day: "6", value: 7330 },
-        { day: "7", value: 6120 },
-        { day: "8", value: 5560 },
-        { day: "9", value: 6890 },
-        { day: "10", value: 7320 },
-        { day: "11", value: 7810 },
-        { day: "12", value: 6590 },
-      ],
-    },
-    {
-      graphLabel: "Monthly Prices",
-      graphData: [
-        { day: "1", value: 9100 },
-        { day: "2", value: 11200 },
-        { day: "3", value: 12350 },
-        { day: "4", value: 10230 },
-        { day: "5", value: 11150 },
-        { day: "6", value: 11670 },
-        { day: "7", value: 10480 },
-        { day: "8", value: 12790 },
-        { day: "9", value: 11900 },
-        { day: "10", value: 13020 },
-        { day: "11", value: 12890 },
-        { day: "12", value: 12100 },
-      ],
-    },
-  ];
-
-  const [graphIndex, setGraphIndex] = useState<number>(0);
-
-  const chartConfig = {
-    value: {
-      label: "value",
-      color: " hsl(var(--chart-2))",
-    },
-  };
-
-  const handleChange = (action: string) => {
-    setGraphIndex(
-      action === "prev"
-        ? graphIndex - 1
-        : action === "next"
-        ? graphIndex + 1
-        : 0
-    );
-  };
-
-  if (onSaleTokenDetailsQuery.isLoading || purchasedTokenDetailsQuery.isLoading)
-    return <p className="p-4">Loading...</p>;
-  if (onSaleTokenDetailsQuery.isError || purchasedTokenDetailsQuery.isError)
-    return (
-      <p className="p-4">
-        An error occured. {onSaleTokenDetailsQuery.error?.message}{" "}
-        {purchasedTokenDetailsQuery.error?.message}
-      </p>
-    );
-
+const WatchListCard = ({
+  tokenCode,
+  propertyLocation,
+  price,
+  profitAmount,
+  propertyType,
+}: WatchListCardProps) => {
   return (
-    <div className="h-screen w-full flex flex-col">
-      <DealTokenDialog
-        data={onSaleTokenDetailsQuery.data}
-        dialogState={isSellDialogOpen}
-        setDialogState={setIsSellDialogOpen}
-        submitTrigger={sellTokenMutation.mutate}
-        type={1}
+    <div className="flex flex-row bg-white w-full h-16 border border-[#848484] border-opacity-25 rounded-md px-4 items-center justify-between">
+      <LandInfo
+        tokenCode={tokenCode}
+        propertyLocation={propertyLocation}
+        propertyType={propertyType}
       />
-      <DealTokenDialog
-        data={onSaleTokenDetailsQuery.data}
-        dialogState={isBuyDialogOpen}
-        setDialogState={setIsBuyDialogOpen}
-        submitTrigger={buyTokenMutation.mutate}
-        type={0}
-      />
-      <div className="w-full flex flex-row p-4 justify-between">
-        <h1 className="text-4xl font-bold dark:text-white">Land Details</h1>
-        <div className="flex flex-row gap-x-4">
-          <Avatar>
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>MA</AvatarFallback>
-          </Avatar>
-        </div>
+      <div className="flex flex-col pl-2">
+        <h3 className="font-bold text-black text-sm text-right">Rs {price}</h3>
+        <h4 className="font-bold text-[#179413] text-xs text-right">
+          +{profitAmount}%
+        </h4>
       </div>
-      <div className="flex h-[90vh] w-full items-center justify-center overflow-hidden">
-        <div className="grid h-full w-full gap-4 p-2 grid-cols-5 grid-rows-2 rounded-lg shadow-md overflow-hidden md:grid-cols-5 md:grid-rows-2 sm:grid-cols-5 sm:grid-rows-2 xs:grid-cols-1 xs:grid-rows-auto">
-          <div className="col-span-2 row-span-1 rounded-lg shadow-md flex items-center justify-center p-4 border border-green-400">
-            <div className=" w-full  h-full">
-              {/* <div className="flex flex-row w-full p-4 justify-between items-start">
-                <h1 className="text-xl font-medium">Price</h1>
-                <div className="flex flex-col">
-                  <p className="text-2xl font-bold">$200</p>
-                </div>
-              </div> */}
-              {/* <Separator className=" dark:bg-white/20 " /> */}
-              <div className="flex flex-row w-full p-4 pb-10 justify-between items-center">
-                <div className="flex flex-row justify-start items-center space-x-2">
-                  <h1 className="text-xl font-medium pr-4">Total tokens</h1>
-                  <p className="text-3xl font-bold">
-                    {purchasedTokenDetailsQuery.data}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => {
-                    setIsSellDialogOpen(true);
-                  }}
-                  className="w-20 h-10 text-md"
-                >
-                  Sell
-                </Button>
-              </div>
-              <TokenTable
-                data={onSaleTokenDetailsQuery.data}
-                buyButton={
-                  <Button
-                    className="w-16 h-[2.5rem]"
-                    onClick={() => {
-                      setIsBuyDialogOpen(true);
-                    }}
-                  >
-                    Buy
-                  </Button>
-                }
-              />
-            </div>
-          </div>
-          <div className="col-span-3 row-span-2 rounded-lg shadow-md flex items-center justify-center p-4 border-green-600 border">
-            <div className="flex flex-col h-full w-full space-y-2">
-              <div className="flex flex-col h-full w-full space-y-2  px-2">
-                <Graphs
-                  chartData={graphArray[graphIndex]?.graphData}
-                  chartConfig={chartConfig}
-                />
-
-                <Pagination className="pt-10">
-                  <PaginationContent>
-                    <PaginationItem
-                      onClick={() =>
-                        graphIndex === 0 ? null : handleChange("prev")
-                      }
-                    >
-                      <PaginationPrevious
-                        className={cn(
-                          "dark:hover:bg-transparent cursor-pointer",
-                          graphIndex === 0
-                            ? "opacity-40 cursor-not-allowed"
-                            : ""
-                        )}
-                      />
-                    </PaginationItem>
-                    <h2 className="text-6xl font-bold w-[30rem] text-center">
-                      {graphArray[graphIndex]?.graphLabel}
-                    </h2>
-                    <PaginationItem
-                      onClick={() =>
-                        graphIndex === 2 ? null : handleChange("next")
-                      }
-                    >
-                      <PaginationNext
-                        className={cn(
-                          "dark:hover:bg-transparent cursor-pointer",
-                          graphIndex === 2
-                            ? "opacity-40 cursor-not-allowed"
-                            : ""
-                        )}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            </div>
-          </div>
-          {/* <div className=" rounded-lg shadow-md flex flex-col items-start justify-start p-4 border border-green-400 w-full h-full space-y-2">
-            <h1 className="text-2xl font-semibold">Property Overview</h1>
-            <ScrollArea className="h-56 w-full bg-black">
-              <div className="flex flex-row flex-wrap"></div>
-            </ScrollArea>
-          </div> */}
-          <div className="col-span-2 row-span-1 rounded-lg shadow-md flex flex-col items-start justify-start p-4 border border-green-400 w-full h-full space-y-2">
-            <h1 className="text-2xl font-semibold">Tentative Location</h1>
-
-            <iframe
-              className=" overflow-hidden rounded-lg"
-              width="100%"
-              height="600"
-              // frameborder="0"
-              scrolling="no"
-              // marginheight="0"
-              // marginwidth="0"
-              src="https://maps.google.com/maps?width=100%25&amp;height=600&amp;hl=en&amp;q=king's%20college+(My%20Business%20Name)&amp;t=&amp;z=14&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"
-            >
-              <a href="https://www.gps.ie/">gps tracker sport</a>
-            </iframe>
-          </div>
-        </div>
-      </div>
-      <style>{`
-        @media (max-width: 640px) {
-          .grid {
-            display: block; /* Stack elements vertically */
-            overflow-y: auto; /* Enable vertical scrolling */
-          }
-        }
-        @media (max-height: 640px) {
-          .grid {
-            display: block; /* Stack elements vertically */
-            overflow-y: auto; /* Enable vertical scrolling */
-          }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default LandDetail;
+const Dashboard = () => {
+  return (
+    <div className="bg-[#FAFAFA] w-full h-screen p-6">
+      {/* Main Container */}
+      <div className="bg-white rounded-lg shadow-lg w-full h-full border border-[#848484] border-opacity-35 px-8 py-8">
+        {/* Content Section */}
+        <div className="flex flex-col gap-3 h-full">
+          {/* Upper Part */}
+          <div className="flex flex-row h-full gap-3 justify-between">
+            <div className="flex flex-col justify-start gap-4 item-center h-full w-7/12">
+              {/* Token Header */}
+              <div className="flex flex-row items-center justify-between w-full">
+                <div className="flex flex-row  items-center h-16 gap-8">
+                  <div className="flex flex-row h-full w-full items-center">
+                    <div className="flex flex-row justify-center items-center w-16 h-16 rounded-full shadow-md bg-white border-black border-opacity-20 border">
+                      {getIcon("commercial")}
+                    </div>
+                    <div className="flex flex-col pl-2">
+                      <h3 className="font-semibold text-black text-xl">
+                        KTM-11554
+                      </h3>
+                      <h4 className="font-semibold text-[#7d7d7d] text-md">
+                        Kathmandu Ward 1
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="flex flex-row gap-2">
+                    <Button className="w-8 h-8 border border-black border-opacity-15 shadow-sm">
+                      <Star />
+                    </Button>
+                    <Button className="w-8 h-8 border border-black border-opacity-15 shadow-sm ">
+                      <GitCompare />
+                    </Button>
+                  </div>
+                </div>
+                {/* Total Tokens */}
+                <div className="flex flex-col items-center gap-y-1">
+                  <Label className="font-semibold text-[#7d7d7d] text-xs">
+                    Total Tokens
+                  </Label>
+                  <h1 className="text-3xl font-semibold text-black">1200</h1>
+                </div>
+              </div>
+              {/* Profit part */}
+              <div className="flex flex-row items-end justify-start gap-2">
+                <h1 className="text-3xl font-semibold text-black">Rs. 1,500</h1>
+                <Label className="text-sm font-bold text-[#179413]">+50%</Label>
+              </div>
+              {/* Graph */}
+              <div className="flex flex-row w-full h-60 bg-green-300"></div>
+              {/* Key Details */}
+              <div className="flex flex-col w-full">
+                <h1 className="font-normal text-black text-xl">Key Details</h1>
+                <div className="w-[640px] bg-white h-20 rounded-md border border-black border-opacity-20 flex flex-row items-center justify-between py-4 px-8 mt-2">
+                  <div className="flex flex-row items-center gap-8">
+                    <div className="flex-1 flex flex-col justify-center">
+                      <Label className="text-xs font-normal text-[#7d7d7d]">
+                        Total Tokens
+                      </Label>
+                      <Label className="text-lg text-black font-medium border-none shadow-none ">
+                        Rs 1200
+                      </Label>
+                    </div>
+                    <Separator
+                      orientation="vertical"
+                      className="h-14 bg-[#E4E4E7]"
+                    />
+                    <div className="flex-1 flex flex-col justify-center">
+                      <Label className="text-xs font-normal text-[#7d7d7d]">
+                        Property Type
+                      </Label>
+                      <Label className="text-lg text-black font-medium border-none shadow-none ">
+                        Residential
+                      </Label>
+                    </div>
+                    <Separator
+                      orientation="vertical"
+                      className="h-14 bg-[#E4E4E7]"
+                    />
+                    <div className="flex-1 flex flex-col justify-center">
+                      <Label className="text-xs font-normal text-[#7d7d7d]">
+                        Property Size
+                      </Label>
+                      <Label className="text-lg text-black font-medium border-none shadow-none ">
+                        16 Aana
+                      </Label>
+                    </div>
+                    <Separator
+                      orientation="vertical"
+                      className="h-14 bg-[#E4E4E7]"
+                    />
+                    <div className="flex-1 flex flex-col justify-center">
+                      <Label className="text-xs font-normal text-[#7d7d7d] overflow-auto">
+                        Dist. from Ring Road
+                      </Label>
+                      <Label className="text-lg text-black font-medium border-none shadow-none ">
+                        16 Km
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col w-full">
+                <h1 className="font-normal text-black text-xl">
+                  Property Description
+                </h1>
+                <ScrollArea className="h-32">
+                  <p className="mt-2 text-[#636363] font-normal text-sm">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+                    do eiusmod tempor incididunt ut labore et dolore magna
+                    aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                    ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+                    do eiusmod tempor incididunt ut labore et dolore magna
+                    aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                    ullamco laboris nisi ut aliquip ex ea commodo consequat
+                    .Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                    sed do eiusmod tempor incididunt ut labore et dolore magna
+                    aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                    ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+                    do eiusmod tempor incididunt ut labore et dolore magna
+                    aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+                    ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  </p>
+                </ScrollArea>
+              </div>
+            </div>
+
+            <div className="w-3/12 flex flex-col gap-2">
+              {/* Tokens for Sale */}
+              <div className="h-1/2 bg-white  border border-[#848484] border-opacity-25 shadow-md rounded-md">
+                <div className="flex flex-row items-center justify-between p-4">
+                  <h1 className="font-medium text-black text-md">
+                    Tokens For Sale
+                  </h1>
+                  <Button className="h-9 w-9 border border-black border-opacity-10">
+                    <Plus />
+                  </Button>
+                </div>
+                <ScrollArea className="h-full px-3">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs font-medium">
+                          Amount
+                        </TableHead>
+                        <TableHead className="text-xs font-medium">
+                          Price Per Token
+                        </TableHead>
+                        <TableHead className="text-xs font-medium">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tokens.map((token, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="text-black text-sm font-normal">
+                            {token.amount}
+                          </TableCell>
+                          <TableCell className="text-black text-sm font-normal">
+                            Rs {token.pricePerToken}
+                          </TableCell>
+                          <TableCell>
+                            <Label className="text-[#0c8ce9] text-sm font-bold">
+                              Buy
+                            </Label>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+              {/* Similar Lands */}
+              <div className="h-1/2 bg-white  border border-[#848484] border-opacity-25 shadow-md rounded-md">
+                <div className="flex flex-row items-center justify-between p-4">
+                  <h1 className="font-medium text-black text-md">
+                    Similar Lands
+                  </h1>
+                </div>
+                <ScrollArea className="h-full px-3">
+                  <WatchListCard
+                    tokenCode="KTM-1154W5"
+                    propertyLocation="Kathmandu Ward 1"
+                    price={1000}
+                    profitAmount={50}
+                    propertyType="commercial"
+                  />
+                </ScrollArea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

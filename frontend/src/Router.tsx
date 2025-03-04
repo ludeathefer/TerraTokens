@@ -6,14 +6,19 @@ import PrivateRoute from "./components/wrappers/PrivateRoute";
 import LandDetail from "./pages/LandDetail";
 import MarketPlace from "./pages/marketplace";
 import Demo from "./pages/Demo";
+import Landing from "./pages/Landing";
+import TransactionHistory from "./pages/TransactionHistory";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      <PrivateRoute>
-        <Dashboard />
-      </PrivateRoute>
+      // <PrivateRoute>
+      <Landing />
+      // <Dashboard />
+      // <Login />
+      // <Signup />
+      // </PrivateRoute>
     ),
   },
   {
@@ -37,6 +42,14 @@ export const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <LandDetail />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/history/",
+    element: (
+      <PrivateRoute>
+        <TransactionHistory />
       </PrivateRoute>
     ),
   },
