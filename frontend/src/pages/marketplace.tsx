@@ -186,6 +186,8 @@ const MarketPlace = () => {
     ],
   });
 
+  console.log(recentLandsQuery.data, topLandsQuery.data);
+
   // Filter data based on search query
   const filteredRecentLands = recentLandsQuery.data?.filter((item) =>
     item.land_detail.city.toLowerCase().includes(searchQuery.toLowerCase())
@@ -263,7 +265,7 @@ const MarketPlace = () => {
                 <Link
                   to={"/land-detail/" + item.token}
                   className="h-full w-60 px-5 pb-2 bg-green-900/40 rounded-xl"
-                  key={item._id}
+                  key={1}
                 >
                   <p className="font-semibold text-white text-center mt-1">
                     {item.land_detail.city}, {item.land_detail.ward}
@@ -303,7 +305,7 @@ const MarketPlace = () => {
             ) : (
               (filteredTopLands?.length > 0
                 ? filteredTopLands
-                : topLandsQuery.data
+                : filteredTopLands.data
               ).map((item) => (
                 <Link
                   to={"/land-detail/" + item.token}

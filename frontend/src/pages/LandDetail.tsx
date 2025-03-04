@@ -26,9 +26,17 @@ import {
   getTokensPurchasedApi,
   sellTokensApi,
 } from "../api";
-import { toast } from "sonner";
+import { ethers } from "ethers";
+import { contractABI } from "../contractABI.js";
+
+const contractAddress = "0x301D99bAa8bAf1e6D4404526d904f7c238d8D9Fa";
 
 const LandDetail = () => {
+  const [metadataURI, setMetadataURI] = useState("");
+  const [numberOfFractions, setNumberOfFractions] = useState(0);
+  const [status, setStatus] = useState("");
+  const [landId, setLandId] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { tokenId } = useParams();
   const [isSellDialogOpen, setIsSellDialogOpen] = useState<boolean>(false);
   const [isBuyDialogOpen, setIsBuyDialogOpen] = useState<boolean>(false);
@@ -74,7 +82,114 @@ const LandDetail = () => {
     ],
   });
 
-  console.log(purchasedTokenDetailsQuery.data);
+  const provider = new ethers.providers.JsonRpcProvider(
+    "http://127.0.0.1:8545/"
+  );
+
+  // Create a wallet instance
+  const privateKey =
+    "ad200aff30fea5d027fea0e4159625c9584b276a5124512a2f26aa9d5928da20"; // Use environment variable
+  const wallet = new ethers.Wallet(privateKey, provider);
+
+  const contract = new ethers.Contract(contractAddress, contractABI, wallet);
+  useEffect(() => {
+    const listener = async (landId, numberOfFractions, metadataURI) => {
+      console.log(`Land fractionalized!`);
+      console.log(`Land ID: ${landId.toString()}`);
+      console.log(`Number of Fractions: ${numberOfFractions.toString()}`);
+      console.log(`Metadata URI: ${metadataURI}`);
+      setLandId(landId.toString());
+
+      let landDetail;
+      try {
+        landDetail = JSON.parse(metadataURI);
+      } catch (error) {
+        console.error("Failed to parse metadataURI:", error);
+        return;
+      }
+
+      const token = wallet.address;
+      const dateCreated = new Date().toISOString().split("T")[0];
+
+      const postData = {
+        land_detail: landDetail,
+        token,
+        no_of_tokens: numberOfFractions,
+        date_created: dateCreated,
+      };
+
+      console.log("Posting data:", postData);
+
+      // try {
+      //   const response = await fetch("http://localhost:3000/api/add_land", {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //     body: JSON.stringify(postData),
+      //   });
+
+      //   if (!response.ok) throw new Error("Failed to add land");
+
+      //   console.log("Land added successfully:", await response.json());
+      // } catch (error) {
+      //   console.error("Error adding land:", error);
+      // }
+    };
+
+    contract.on("LandFractionalized", listener);
+
+    return () => {
+      contract.off("LandFractionalized", listener);
+    };
+  }, []);
+
+  async function fractionalizeLand(
+    price,
+    city,
+    ward,
+    street_number,
+    plot_number,
+    land_class
+  ) {
+    let metadataURI = JSON.stringify({
+      city,
+      ward,
+      street_number,
+      plot_number,
+      land_class,
+    });
+
+    let numberOfFractions = Math.floor(price / 1000); // Ensure it is an integer and greater than zero
+
+    if (!metadataURI || numberOfFractions <= 0) {
+      setStatus("Please enter valid metadata URI and number of fractions.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const currentNonce = await provider.getTransactionCount(wallet.address); // Fetch current nonce
+      const tx = await contract.fractionalizeLand(
+        metadataURI,
+        numberOfFractions,
+        { nonce: currentNonce }
+      );
+
+      console.log("Transaction sent! Waiting for confirmation...");
+      await tx.wait();
+
+      console.log("Transaction confirmed!", tx.hash);
+      setStatus("Land fractionalized successfully!");
+    } catch (error) {
+      console.error("Error fractionalizing land:", error);
+      setStatus(`Error: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  console.log(tokenDetailsQuery.data);
 
   const graphArray = [
     {

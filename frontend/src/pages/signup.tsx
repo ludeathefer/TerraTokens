@@ -65,8 +65,7 @@ const Signup = () => {
 
   return (
     <div className="flex flex-col   justify-center items-center h-screen w-screen ">
-      <h1 className="mb-8">Signup</h1>
-      <div className=" items-center bg-[black] flex justify-center flex-col  w-1/3  rounded-3xl pt-10 pb-5 ">
+      <div className=" items-center bg-[black] flex justify-center flex-col  w-1/3  rounded-3xl pt-10 pb-5 bg-gradient-to-r from-teal-900 to-zinc-900 ">
         <img src={logoSignup} className=" w-full h-24 object-contain " />
         <Form {...form}>
           <form
