@@ -16,7 +16,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-row">
+    <div className="h-screen w-screen flex flex-row  ">
       <Sidebar
         className={`${
           sidebarExpanded

@@ -99,6 +99,7 @@ const Dashboard = () => {
         value: averagePriceForDay,
       });
     }
+    // console.log(dailyAverages);
 
     return dailyAverages;
   };
