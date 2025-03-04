@@ -1,28 +1,86 @@
 package config
 
 import (
-	"log"
+	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	Port string
+type JwtConfig struct {
+	JWTSecret     string
+	JWTExpiration string
 }
 
-func LoadConfig() (*Config, error) {
+type ServerConfig struct {
+	Port string
+	Mode string
+}
+
+type DatabaseConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	DBName   string
+}
+
+type Config struct {
+	Server   ServerConfig
+	Database DatabaseConfig
+	JWT      JwtConfig
+}
+
+func LoadConfig() *Config {
+	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found, using defaults")
-	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+		fmt.Println("Error loading .env file")
 	}
 
 	return &Config{
-		Port: port,
-	}, nil
+		Server: ServerConfig{
+			Port: getEnv("SERVER_PORT", "8080"),
+			Mode: getEnv("GIN_MODE", "debug"),
+		},
+		Database: DatabaseConfig{
+			Host:     getEnv("DB_HOST", "localhost"),
+			Port:     getEnv("DB_PORT", "3306"),
+			Username: getEnv("DB_USER", "root"),
+			Password: getEnv("DB_PASSWORD", "password"),
+			DBName:   getEnv("DB_NAME", "database"),
+		},
+		JWT: JwtConfig{
+			JWTSecret:     getEnv("JWT_SECRET", "lokistandsup"),
+			JWTExpiration: getEnv("JWT_EXPIRATION", "24h"),
+		},
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvAsInt(key string, defaultValue int64) int64 {
+	if value, exists := os.LookupEnv(key); exists {
+		intValue, err := strconv.ParseInt(value, 10, 64)
+		if err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if value, exists := os.LookupEnv(key); exists {
+		boolValue, err := strconv.ParseBool(value)
+		if err == nil {
+			return boolValue
+		}
+	}
+	return defaultValue
 }

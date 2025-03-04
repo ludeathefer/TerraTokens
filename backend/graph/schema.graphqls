@@ -1,0 +1,119 @@
+scalar Time
+scalar UUID
+
+type Price {
+  id: ID!
+  date: Time!
+  value: Float!
+}
+
+type LandToken {
+  id: UUID!
+  landId: Int!
+  name: String!
+  totalTokens: Int!
+  createdAt: Time!
+  updatedAt: Time!
+  currentPrice: Float!
+  prices: [Price!]!
+  propertyType: String!
+  propertySize: Float!
+  propertySizeUnit: String!
+  landmark: String!
+  distanceFromLandmark: Float!
+  distanceUnit: String!
+  propertyDescription: String!
+  latitude: String!
+  longitude: String!
+}
+
+type Role {
+  id: ID!
+  name: String!
+  description: String
+}
+
+type OwnedToken {
+  id: ID!
+  landToken: LandToken!
+  quantity: Int!
+}
+
+type TransactedToken {
+  id: ID!
+  landToken: LandToken!
+  quantity: Int!
+  price: Float!
+  from: User
+  to: User
+  createdAt: Time!
+}
+
+type Bid {
+  id: ID!
+  price: Float!
+  sale: [Sale!]!
+  createdAt: Time!
+}
+
+type Sale {
+  id: ID!
+  landToken: LandToken!
+  quantity: Int!
+  price: Float!
+  seller: User!
+  bids: [Bid!]!
+  createdAt: Time!
+}
+
+type User {
+  id: UUID!
+  publicKey: String!
+  username: String!
+  phone: String!
+  email: String!
+  password: String!
+  roles: [Role!]!
+  createdAt: Time!
+  updatedAt: Time!
+  watchlist: [LandToken!]!
+  ownedTokens: [OwnedToken!]!
+  bids: [Bid!]!
+  boughtTokens: [TransactedToken!]!
+  sales: [Sale!]!
+  soldTokens: [TransactedToken!]!
+}
+
+input CreateUserInput {
+  publicKey: String!
+  username: String!
+  phone: String!
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  username: String
+  phone: String
+  email: String
+  password: String
+}
+
+type LoginResponse {
+  token: String!
+  User: User!
+}
+
+type Query {
+  users: [User!]! @auth(requires: ["admin"])
+  user(id: UUID!): User @auth
+  login(email: String!, password: String!): LoginResponse!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: UUID!, input: UpdateUserInput!): User!
+  deleteUser(id: UUID!): Boolean! @auth(requires: ["admin"])
+}
+
+directive @auth(requires: [String!] = []) on FIELD_DEFINITION
