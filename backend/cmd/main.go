@@ -10,6 +10,7 @@ import (
 	"github.com/ludeathfer/TerraTokens/backend/db"
 	"github.com/ludeathfer/TerraTokens/backend/graph"
 	"github.com/ludeathfer/TerraTokens/backend/middleware"
+	blockchain "github.com/ludeathfer/TerraTokens/backend/pkg/go-eth"
 	"github.com/vektah/gqlparser/v2/ast"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -19,10 +20,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 )
 
-func graphqlHandler(database *sql.DB, cfg *config.Config) gin.HandlerFunc {
+func graphqlHandler(database *sql.DB, blockchainClient *blockchain.BlockchainClient, cfg *config.Config) gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
-	c := graph.Config{Resolvers: &graph.Resolver{Database: database, Config: cfg}}
+	c := graph.Config{Resolvers: &graph.Resolver{Database: database, BlockchainClient: blockchainClient, Config: cfg}}
 	c.Directives.Auth = graph.AuthDirective
 
 	h := handler.New(graph.NewExecutableSchema(c))
@@ -40,18 +41,16 @@ func graphqlHandler(database *sql.DB, cfg *config.Config) gin.HandlerFunc {
 	})
 
 	return func(c *gin.Context) {
-		c.Set("db", database)
 		h.ServeHTTP(c.Writer, c.Request)
 	}
 
 }
 
 // Defining the Playground handler
-func playgroundHandler(database *sql.DB) gin.HandlerFunc {
+func playgroundHandler() gin.HandlerFunc {
 	h := playground.Handler("GraphQL", "/query")
 
 	return func(c *gin.Context) {
-		c.Set("db", database)
 		h.ServeHTTP(c.Writer, c.Request)
 	}
 }
@@ -74,12 +73,17 @@ func main() {
 		log.Fatalf("Failed to automigrate models: %v", err)
 	}
 
+	blockchainClient, err := blockchain.NewConn(cfg.Blockchain)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
 	r := gin.Default()
 	r.Use(middleware.GinContextToContextMiddleware())
 	r.Use(middleware.AuthMiddleware(cfg.JWT))
 
-	r.POST("/query", graphqlHandler(database, cfg))
-	r.GET("/playground", playgroundHandler(database))
+	r.POST("/query", graphqlHandler(database, blockchainClient, cfg))
+	r.GET("/playground", playgroundHandler())
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "Welcome to GraphQL API",

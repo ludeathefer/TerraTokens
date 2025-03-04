@@ -49,20 +49,12 @@ type TransactedToken {
   createdAt: Time!
 }
 
-type Bid {
-  id: ID!
-  price: Float!
-  sale: [Sale!]!
-  createdAt: Time!
-}
-
 type Sale {
   id: ID!
   landToken: LandToken!
   quantity: Int!
   price: Float!
   seller: User!
-  bids: [Bid!]!
   createdAt: Time!
 }
 
@@ -78,10 +70,24 @@ type User {
   updatedAt: Time!
   watchlist: [LandToken!]!
   ownedTokens: [OwnedToken!]!
-  bids: [Bid!]!
   boughtTokens: [TransactedToken!]!
   sales: [Sale!]!
   soldTokens: [TransactedToken!]!
+}
+
+input CreateLandTokenInput {
+  name: String!
+  totalTokens: Int!
+  currentPrice: Float!
+  propertyType: String!
+  propertySize: Float!
+  propertySizeUnit: String!
+  landmark: String!
+  distanceFromLandmark: Float!
+  distanceUnit: String!
+  propertyDescription: String!
+  latitude: String!
+  longitude: String!
 }
 
 input CreateUserInput {
@@ -99,6 +105,22 @@ input UpdateUserInput {
   password: String
 }
 
+input CreatePriceInput {
+  date: Time!
+  value: Float!
+}
+
+input CreateSaleInput {
+  landTokenId: UUID!
+  quantity: Int!
+  price: Float!
+}
+
+input BuyTokenInput {
+  saleId: ID!
+  quantity: Int!
+}
+
 type LoginResponse {
   token: String!
   User: User!
@@ -108,12 +130,29 @@ type Query {
   users: [User!]! @auth(requires: ["admin"])
   user(id: UUID!): User @auth
   login(email: String!, password: String!): LoginResponse!
+  landTokens: [LandToken!]! @auth
+  landToken(id: UUID!): LandToken @auth
+  sales: [Sale!]! @auth
+  sale(id: ID!): Sale @auth
 }
 
 type Mutation {
   createUser(input: CreateUserInput!): User!
-  updateUser(id: UUID!, input: UpdateUserInput!): User!
+  updateUser(id: UUID!, input: UpdateUserInput!): User! @auth
   deleteUser(id: UUID!): Boolean! @auth(requires: ["admin"])
+  createLandToken(
+    privateKey: String!
+    input: CreateLandTokenInput!
+  ): LandToken! @auth(requires: ["admin"])
+  updateLandToken(id: UUID!, input: CreateLandTokenInput!): LandToken!
+    @auth(requires: ["admin"])
+  addPriceToLandToken(landTokenId: UUID!, input: CreatePriceInput!): LandToken!
+    @auth(requires: ["admin"])
+  buyToken(privateKey: String!, input: BuyTokenInput!): TransactedToken! @auth
+  createSale(privateKey: String!, input: CreateSaleInput!): Sale! @auth
+  deleteSale(privateKey: String!, id: ID!): Boolean! @auth
+  addToWatchlist(landTokenId: UUID!): User @auth
+  removeFromWatchlist(landTokenId: UUID!): User @auth
 }
 
 directive @auth(requires: [String!] = []) on FIELD_DEFINITION

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ludeathfer/TerraTokens/backend/config"
 	"github.com/ludeathfer/TerraTokens/backend/middleware"
+	blockchain "github.com/ludeathfer/TerraTokens/backend/pkg/go-eth"
 )
 
 // This file will not be regenerated automatically.
@@ -17,8 +18,9 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Database *sql.DB
-	Config   *config.Config
+	Database         *sql.DB
+	BlockchainClient *blockchain.BlockchainClient
+	Config           *config.Config
 }
 
 // GetGinContext extracts the Gin context from the context.Context

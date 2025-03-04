@@ -8,11 +8,35 @@ import (
 	"github.com/google/uuid"
 )
 
-type Bid struct {
-	ID        int       `json:"id"`
-	Price     float64   `json:"price"`
-	Sale      []*Sale   `json:"sale"`
-	CreatedAt time.Time `json:"createdAt"`
+type BuyTokenInput struct {
+	SaleID   int   `json:"saleId"`
+	Quantity int32 `json:"quantity"`
+}
+
+type CreateLandTokenInput struct {
+	Name                 string  `json:"name"`
+	TotalTokens          int32   `json:"totalTokens"`
+	CurrentPrice         float64 `json:"currentPrice"`
+	PropertyType         string  `json:"propertyType"`
+	PropertySize         float64 `json:"propertySize"`
+	PropertySizeUnit     string  `json:"propertySizeUnit"`
+	Landmark             string  `json:"landmark"`
+	DistanceFromLandmark float64 `json:"distanceFromLandmark"`
+	DistanceUnit         string  `json:"distanceUnit"`
+	PropertyDescription  string  `json:"propertyDescription"`
+	Latitude             string  `json:"latitude"`
+	Longitude            string  `json:"longitude"`
+}
+
+type CreatePriceInput struct {
+	Date  time.Time `json:"date"`
+	Value float64   `json:"value"`
+}
+
+type CreateSaleInput struct {
+	LandTokenID uuid.UUID `json:"landTokenId"`
+	Quantity    int32     `json:"quantity"`
+	Price       float64   `json:"price"`
 }
 
 type CreateUserInput struct {
@@ -78,7 +102,6 @@ type Sale struct {
 	Quantity  int32      `json:"quantity"`
 	Price     float64    `json:"price"`
 	Seller    *User      `json:"seller"`
-	Bids      []*Bid     `json:"bids"`
 	CreatedAt time.Time  `json:"createdAt"`
 }
 
@@ -111,7 +134,6 @@ type User struct {
 	UpdatedAt    time.Time          `json:"updatedAt"`
 	Watchlist    []*LandToken       `json:"watchlist"`
 	OwnedTokens  []*OwnedToken      `json:"ownedTokens"`
-	Bids         []*Bid             `json:"bids"`
 	BoughtTokens []*TransactedToken `json:"boughtTokens"`
 	Sales        []*Sale            `json:"sales"`
 	SoldTokens   []*TransactedToken `json:"soldTokens"`

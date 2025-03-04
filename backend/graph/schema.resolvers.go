@@ -7,11 +7,14 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
+	"math/big"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/ludeathfer/TerraTokens/backend/graph/model"
 	"github.com/ludeathfer/TerraTokens/backend/middleware"
+	blockchain "github.com/ludeathfer/TerraTokens/backend/pkg/go-eth"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -191,6 +194,112 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id uuid.UUID) (bool, 
 	return true, nil
 }
 
+// CreateLandToken is the resolver for the createLandToken field.
+func (r *mutationResolver) CreateLandToken(ctx context.Context, privateKey string, input model.CreateLandTokenInput) (*model.LandToken, error) {
+	db := r.Database
+	bcc := r.BlockchainClient
+
+	transactor, err := blockchain.CreateTransactor(ctx, bcc.Client, privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating transactor: %v", err)
+	}
+
+	tx, err := bcc.Land.FractionalizeLand(transactor, "", big.NewInt(int64(input.TotalTokens)))
+	if err != nil {
+		return nil, fmt.Errorf("failed sending transaction: %v", err)
+	}
+
+	log.Printf("FractionalizeLand Transaction sent: %s", tx.Hash().Hex())
+
+	eventLog, err := blockchain.WaitForEvent(ctx, bcc, tx.Hash().Hex())
+	if err != nil {
+		return nil, err
+	}
+
+	landIDBigInt := new(big.Int).SetBytes(eventLog.Topics[1].Bytes())
+	landID := int32(landIDBigInt.Int64())
+
+	// Generate new UUID
+	landTokenID := uuid.New()
+
+	// Insert data into DB
+	query := `
+			INSERT INTO land_tokens (
+				id, land_id, name, total_tokens, current_price, 
+				property_type, property_size, property_size_unit, landmark, 
+				distance_from_landmark, distance_unit, property_description, 
+				latitude, longitude
+			) 
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+		`
+	_, err = db.Exec(query,
+		landTokenID, landID, input.Name, input.TotalTokens, input.CurrentPrice,
+		input.PropertyType, input.PropertySize, input.PropertySizeUnit, input.Landmark,
+		input.DistanceFromLandmark, input.DistanceUnit, input.PropertyDescription,
+		input.Latitude, input.Longitude,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed inserting into database: %v", err)
+	}
+
+	// Construct response object
+	landToken := &model.LandToken{
+		ID:                   landTokenID,
+		LandID:               landID,
+		Name:                 input.Name,
+		TotalTokens:          input.TotalTokens,
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
+		CurrentPrice:         input.CurrentPrice,
+		PropertyType:         input.PropertyType,
+		PropertySize:         input.PropertySize,
+		PropertySizeUnit:     input.PropertySizeUnit,
+		Landmark:             input.Landmark,
+		DistanceFromLandmark: input.DistanceFromLandmark,
+		DistanceUnit:         input.DistanceUnit,
+		PropertyDescription:  input.PropertyDescription,
+		Latitude:             input.Latitude,
+		Longitude:            input.Longitude,
+	}
+
+	return landToken, nil
+}
+
+// UpdateLandToken is the resolver for the updateLandToken field.
+func (r *mutationResolver) UpdateLandToken(ctx context.Context, id uuid.UUID, input model.CreateLandTokenInput) (*model.LandToken, error) {
+	panic(fmt.Errorf("not implemented: UpdateLandToken - updateLandToken"))
+}
+
+// AddPriceToLandToken is the resolver for the addPriceToLandToken field.
+func (r *mutationResolver) AddPriceToLandToken(ctx context.Context, landTokenID uuid.UUID, input model.CreatePriceInput) (*model.LandToken, error) {
+	panic(fmt.Errorf("not implemented: AddPriceToLandToken - addPriceToLandToken"))
+}
+
+// BuyToken is the resolver for the buyToken field.
+func (r *mutationResolver) BuyToken(ctx context.Context, privateKey string, input model.BuyTokenInput) (*model.TransactedToken, error) {
+	panic(fmt.Errorf("not implemented: BuyToken - buyToken"))
+}
+
+// CreateSale is the resolver for the createSale field.
+func (r *mutationResolver) CreateSale(ctx context.Context, privateKey string, input model.CreateSaleInput) (*model.Sale, error) {
+	panic(fmt.Errorf("not implemented: CreateSale - createSale"))
+}
+
+// DeleteSale is the resolver for the deleteSale field.
+func (r *mutationResolver) DeleteSale(ctx context.Context, privateKey string, id int) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteSale - deleteSale"))
+}
+
+// AddToWatchlist is the resolver for the addToWatchlist field.
+func (r *mutationResolver) AddToWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: AddToWatchlist - addToWatchlist"))
+}
+
+// RemoveFromWatchlist is the resolver for the removeFromWatchlist field.
+func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: RemoveFromWatchlist - removeFromWatchlist"))
+}
+
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	db := r.Database
@@ -327,6 +436,26 @@ func (r *queryResolver) Login(ctx context.Context, email string, password string
 	}
 
 	return loginResponse, nil
+}
+
+// LandTokens is the resolver for the landTokens field.
+func (r *queryResolver) LandTokens(ctx context.Context) ([]*model.LandToken, error) {
+	panic(fmt.Errorf("not implemented: LandTokens - landTokens"))
+}
+
+// LandToken is the resolver for the landToken field.
+func (r *queryResolver) LandToken(ctx context.Context, id uuid.UUID) (*model.LandToken, error) {
+	panic(fmt.Errorf("not implemented: LandToken - landToken"))
+}
+
+// Sales is the resolver for the sales field.
+func (r *queryResolver) Sales(ctx context.Context) ([]*model.Sale, error) {
+	panic(fmt.Errorf("not implemented: Sales - sales"))
+}
+
+// Sale is the resolver for the sale field.
+func (r *queryResolver) Sale(ctx context.Context, id int) (*model.Sale, error) {
+	panic(fmt.Errorf("not implemented: Sale - sale"))
 }
 
 // Mutation returns MutationResolver implementation.

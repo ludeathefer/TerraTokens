@@ -8,6 +8,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type BlockchainConfig struct {
+	RpcUrl          string
+	ContractAddress string
+}
+
 type JwtConfig struct {
 	JWTSecret     string
 	JWTExpiration string
@@ -27,9 +32,10 @@ type DatabaseConfig struct {
 }
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JwtConfig
+	Server     ServerConfig
+	Database   DatabaseConfig
+	JWT        JwtConfig
+	Blockchain BlockchainConfig
 }
 
 func LoadConfig() *Config {
@@ -54,6 +60,10 @@ func LoadConfig() *Config {
 		JWT: JwtConfig{
 			JWTSecret:     getEnv("JWT_SECRET", "lokistandsup"),
 			JWTExpiration: getEnv("JWT_EXPIRATION", "24h"),
+		},
+		Blockchain: BlockchainConfig{
+			RpcUrl:          getEnv("RPC_URL", "http://localhost:8085"),
+			ContractAddress: getEnv("CONTRACT_ADDRESS", "0xg3ty0uraddr3551n3nvthi5i5no7g0ingt0w0rk"),
 		},
 	}
 }
