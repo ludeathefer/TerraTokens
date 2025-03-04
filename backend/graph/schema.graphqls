@@ -116,6 +116,11 @@ input CreateSaleInput {
   price: Float!
 }
 
+input UpdateSaleInput {
+  quantity: Int!
+  price: Float!
+}
+
 input BuyTokenInput {
   saleId: ID!
   quantity: Int!
@@ -150,6 +155,8 @@ type Mutation {
     @auth(requires: ["admin"])
   buyToken(privateKey: String!, input: BuyTokenInput!): TransactedToken! @auth
   createSale(privateKey: String!, input: CreateSaleInput!): Sale! @auth
+  updateSale(privateKey: String!, id: UUID!, input: UpdateSaleInput!): Sale!
+    @auth
   deleteSale(privateKey: String!, id: ID!): Boolean! @auth
   addToWatchlist(landTokenId: UUID!): User @auth
   removeFromWatchlist(landTokenId: UUID!): User @auth

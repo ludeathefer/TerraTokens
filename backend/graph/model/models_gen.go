@@ -115,6 +115,11 @@ type TransactedToken struct {
 	CreatedAt time.Time  `json:"createdAt"`
 }
 
+type UpdateSaleInput struct {
+	Quantity int32   `json:"quantity"`
+	Price    float64 `json:"price"`
+}
+
 type UpdateUserInput struct {
 	Username *string `json:"username,omitempty"`
 	Phone    *string `json:"phone,omitempty"`

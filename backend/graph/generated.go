@@ -86,6 +86,7 @@ type ComplexityRoot struct {
 		DeleteUser          func(childComplexity int, id uuid.UUID) int
 		RemoveFromWatchlist func(childComplexity int, landTokenID uuid.UUID) int
 		UpdateLandToken     func(childComplexity int, id uuid.UUID, input model.CreateLandTokenInput) int
+		UpdateSale          func(childComplexity int, privateKey string, id uuid.UUID, input model.UpdateSaleInput) int
 		UpdateUser          func(childComplexity int, id uuid.UUID, input model.UpdateUserInput) int
 	}
 
@@ -163,6 +164,7 @@ type MutationResolver interface {
 	AddPriceToLandToken(ctx context.Context, landTokenID uuid.UUID, input model.CreatePriceInput) (*model.LandToken, error)
 	BuyToken(ctx context.Context, privateKey string, input model.BuyTokenInput) (*model.TransactedToken, error)
 	CreateSale(ctx context.Context, privateKey string, input model.CreateSaleInput) (*model.Sale, error)
+	UpdateSale(ctx context.Context, privateKey string, id uuid.UUID, input model.UpdateSaleInput) (*model.Sale, error)
 	DeleteSale(ctx context.Context, privateKey string, id int) (bool, error)
 	AddToWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error)
 	RemoveFromWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error)
@@ -448,6 +450,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateLandToken(childComplexity, args["id"].(uuid.UUID), args["input"].(model.CreateLandTokenInput)), true
+
+	case "Mutation.updateSale":
+		if e.complexity.Mutation.UpdateSale == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSale_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateSale(childComplexity, args["privateKey"].(string), args["id"].(uuid.UUID), args["input"].(model.UpdateSaleInput)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -795,6 +809,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreatePriceInput,
 		ec.unmarshalInputCreateSaleInput,
 		ec.unmarshalInputCreateUserInput,
+		ec.unmarshalInputUpdateSaleInput,
 		ec.unmarshalInputUpdateUserInput,
 	)
 	first := true
@@ -1275,6 +1290,65 @@ func (ec *executionContext) field_Mutation_updateLandToken_argsInput(
 	}
 
 	var zeroVal model.CreateLandTokenInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSale_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateSale_argsPrivateKey(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["privateKey"] = arg0
+	arg1, err := ec.field_Mutation_updateSale_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg1
+	arg2, err := ec.field_Mutation_updateSale_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateSale_argsPrivateKey(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("privateKey"))
+	if tmp, ok := rawArgs["privateKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSale_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (uuid.UUID, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+	}
+
+	var zeroVal uuid.UUID
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSale_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateSaleInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateSaleInput2githubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐUpdateSaleInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateSaleInput
 	return zeroVal, nil
 }
 
@@ -3247,6 +3321,102 @@ func (ec *executionContext) fieldContext_Mutation_createSale(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createSale_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateSale(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateSale(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateSale(rctx, fc.Args["privateKey"].(string), fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.UpdateSaleInput))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			requires, err := ec.unmarshalOString2ᚕstringᚄ(ctx, []any{})
+			if err != nil {
+				var zeroVal *model.Sale
+				return zeroVal, err
+			}
+			if ec.directives.Auth == nil {
+				var zeroVal *model.Sale
+				return zeroVal, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0, requires)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Sale); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/ludeathfer/TerraTokens/backend/graph/model.Sale`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Sale)
+	fc.Result = res
+	return ec.marshalNSale2ᚖgithubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐSale(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateSale(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Sale_id(ctx, field)
+			case "landToken":
+				return ec.fieldContext_Sale_landToken(ctx, field)
+			case "quantity":
+				return ec.fieldContext_Sale_quantity(ctx, field)
+			case "price":
+				return ec.fieldContext_Sale_price(ctx, field)
+			case "seller":
+				return ec.fieldContext_Sale_seller(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Sale_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Sale", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateSale_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8445,6 +8615,40 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateSaleInput(ctx context.Context, obj any) (model.UpdateSaleInput, error) {
+	var it model.UpdateSaleInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"quantity", "price"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "quantity":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quantity"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Quantity = data
+		case "price":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Price = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj any) (model.UpdateUserInput, error) {
 	var it model.UpdateUserInput
 	asMap := map[string]any{}
@@ -8735,6 +8939,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createSale":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createSale(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateSale":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateSale(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -10160,6 +10371,11 @@ func (ec *executionContext) marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateSaleInput2githubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐUpdateSaleInput(ctx context.Context, v any) (model.UpdateSaleInput, error) {
+	res, err := ec.unmarshalInputUpdateSaleInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v any) (model.UpdateUserInput, error) {
