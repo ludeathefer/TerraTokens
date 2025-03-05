@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
+import { ethers } from "ethers";
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -138,20 +139,64 @@ const Dashboard = () => {
   }
   // const chartData = token.
 
-  const handleBuyTokens = () => {
-    // Update the state to reflect the purchase
-    const updatedTokensForSale = tokensForSale.map((token) => {
-      if (token.tokenCode === selectedTokenForAction.tokenCode) {
-        return {
-          ...token,
-          amount: token.amount - numTokensToBuy,
-        };
-      }
-      return token;
-    });
+  // const handleBuyTokens = () => {
+  //   // Update the state to reflect the purchase
+  //   const updatedTokensForSale = tokensForSale.map((token) => {
+  //     if (token.tokenCode === selectedTokenForAction.tokenCode) {
+  //       return {
+  //         ...token,
+  //         amount: token.amount - numTokensToBuy,
+  //       };
+  //     }
+  //     return token;
+  //   });
 
-    setTokensForSale(updatedTokensForSale);
-    setIsBuyDialogOpen(false);
+  //   setTokensForSale(updatedTokensForSale);
+  //   setIsBuyDialogOpen(false);
+  // };
+
+  const handleBuyTokens = async () => {
+    try {
+      // Ensure MetaMask is available
+      if (!window.ethereum) {
+        alert("Please install MetaMask to proceed.");
+        return;
+      }
+
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+
+      const recipientAddress = "0x2546BcD3c84621e976D8185a91A922aE77ECEc30";
+      const amountInWei = ethers.utils.parseEther(numTokensToBuy.toString());
+
+      const transaction = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: accounts[0],
+            to: recipientAddress,
+            value: amountInWei.toString(),
+          },
+        ],
+      });
+
+      console.log("Transaction initiated:", transaction);
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("User rejected the transaction");
+        // Display a neutral message to the user
+        alert("Transaction not completed.");
+      } else if (error.code === -32603) {
+        console.log("Invalid transaction parameters");
+        // Handle invalid transaction parameters
+        alert("Invalid transaction details.");
+      } else {
+        console.error("Transaction failed:", error);
+        // Handle other errors gracefully
+        alert("An error occurred. Please try again.");
+      }
+    }
   };
 
   const handleEditTokens = () => {
