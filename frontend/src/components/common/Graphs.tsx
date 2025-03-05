@@ -54,6 +54,13 @@ const Graphs = (props: Props) => {
             right: 10,
           }}
         >
+          <defs>
+            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="2%" stopColor="#e3f6ff" stopOpacity={1} />
+              <stop offset="98%" stopColor="#e3f6ff" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+
           <CartesianGrid vertical={false} horizontal={false} />
           <XAxis
             dataKey="day"
@@ -75,9 +82,10 @@ const Graphs = (props: Props) => {
           <Area
             dataKey="value" // Show the value of the token for each day
             type="linear"
-            fill="#355E3B"
-            fillOpacity={0.2}
-            stroke="#0c8ce9"
+            fill="url(#colorUv)"
+            fillOpacity={0.6}
+            strokeWidth={2}
+            stroke="#81b8db"
           />
         </AreaChart>
       </ResponsiveContainer>

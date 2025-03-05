@@ -20,7 +20,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
       <Sidebar
         className={`${
           sidebarExpanded
-            ? "sm:min-w-[300px] md:min-w-[300px] w-auto shrink-0"
+            ? "sm:min-w-[250px] md:min-w-[250px] w-auto shrink-0"
             : "sm:min-w-[25px] md:min-w-[25px] min-w-[50px] w-auto shrink-0"
         }`}
         sidebarExpanded={sidebarExpanded}

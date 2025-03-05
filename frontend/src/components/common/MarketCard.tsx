@@ -1,7 +1,15 @@
 import LandInfo from "./LandInfo";
 import { Label } from "../ui/label";
-import Graphs from "./Graphs";
+// import Graphs from "./Graphs";
 import { ChartDataPoint } from "./Graphs";
+import {
+  CartesianGrid,
+  Line,
+  XAxis,
+  LineChart,
+  ResponsiveContainer,
+} from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 
 interface MarketCardProps {
   tokenCode: string;
@@ -13,6 +21,25 @@ interface MarketCardProps {
   chartData: ChartDataPoint[];
   onClick?: (tokenCode: string) => void;
 }
+
+const chartConfig = {
+  commercial: {
+    label: "Commercial Token Value",
+    color: "#4CAF50", // Green color for commercial tokens
+  },
+  residential: {
+    label: "Residential Token Value",
+    color: "#2196F3", // Blue color for residential tokens
+  },
+  agricultural: {
+    label: "Agricultural Token Value",
+    color: "#FF9800", // Orange color for agricultural tokens
+  },
+  recreational: {
+    label: "Recreational Token Value",
+    color: "#9C27B0", // Purple color for recreational tokens
+  },
+};
 
 const MarketCard = ({
   tokenCode,
@@ -59,27 +86,32 @@ const MarketCard = ({
             Rs. {previousPrice}
           </Label>
         </div>
-        <Graphs
+
+        <ChartContainer config={chartConfig} className="mx-10 w-full h-auto">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              accessibilityLayer
+              data={chartData}
+              margin={{
+                top: 16,
+                left: 8,
+                right: 8,
+              }}
+            >
+              <Line
+                dataKey="value"
+                type="natural"
+                stroke="#000000"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+        {/* <Graphs
           chartData={chartData}
-          chartConfig={{
-            commercial: {
-              label: "Commercial Token Value",
-              color: "#4CAF50", // Green color for commercial tokens
-            },
-            residential: {
-              label: "Residential Token Value",
-              color: "#2196F3", // Blue color for residential tokens
-            },
-            agricultural: {
-              label: "Agricultural Token Value",
-              color: "#FF9800", // Orange color for agricultural tokens
-            },
-            recreational: {
-              label: "Recreational Token Value",
-              color: "#9C27B0", // Purple color for recreational tokens
-            },
-          }}
-        />
+          chartConfig=
+        /> */}
       </div>
     </div>
   );

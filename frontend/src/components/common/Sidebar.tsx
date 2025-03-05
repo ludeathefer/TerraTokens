@@ -55,7 +55,7 @@ const SidebarButton: FC<SidebarButtonProps> = ({
           sidebarExpanded ? "" : "rounded-full justify-center",
           isActive
             ? "text-[#0C8CE9] border border-[#C8C8C8] dark:bg-[#F1F1F1]  dark:hover:bg-[#F1F1F1] "
-            : " hover:bg-[#F1F1F1] dark:hover:text-black "
+            : " hover:bg-[#F1F1F1] dark:hover:text-black text-[#898989] "
         )}
       >
         <Icon className={cn(sidebarExpanded ? "mr-2 h-4 w-4" : "")} />
@@ -72,8 +72,10 @@ export const Sidebar: FC<SidebarProps> = ({
   activePage,
 }) => {
   return (
-    <div className={cn("pb-12 bg-white border-r border-white/10", className)}>
-      <div className="space-y-4 py-4 min-w-20">
+    <div
+      className={cn("pb-12 bg-[#FAFAFA] border-r border-white/10", className)}
+    >
+      <div className="space-y-4 py-4 min-w-16">
         <div className="px-4 py-2">
           <div
             className={cn(
@@ -94,7 +96,7 @@ export const Sidebar: FC<SidebarProps> = ({
               <h2
                 className={
                   sidebarExpanded
-                    ? "block text-lg font-bold tracking-tight"
+                    ? "block text-xl font-bold tracking-tight"
                     : "hidden "
                 }
               >
