@@ -26,39 +26,39 @@ import {
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { gql, useMutation, useQuery } from "@apollo/client";
+import { ethers } from "ethers";
 
-// const LAND_TOKEN = gql`
-//   query LandToken($id: UUID!) {
-//     landToken(id: $id) {
-//       id
-//       landId
-//       name
-//       totalTokens
-//       createdAt
-//       updatedAt
-//       currentPrice
-//       propertyType
-//       propertySize
-//       propertySizeUnit
-//       landmark
-//       distanceFromLandmark
-//       distanceUnit
-//       propertyDescription
-//       latitude
-//       longitude
-//     }
-//   }
-// `;
+const LAND_TOKEN = gql`
+  query LandToken($id: UUID!) {
+    landToken(id: $id) {
+      id
+      landId
+      name
+      totalTokens
+      createdAt
+      updatedAt
+      currentPrice
+      propertyType
+      propertySize
+      propertySizeUnit
+      landmark
+      distanceFromLandmark
+      distanceUnit
+      propertyDescription
+      latitude
+      longitude
+    }
+  }
+`;
 
-// const CREATE_SALE = gql`
-//   mutation CreateSale($privateKey: String!, $input: CreateSaleInput!) {
-//     createSale(privateKey: $privateKey, input: $input) {
-//       landId
-//       quantity
-//       price
-//     }
-//   }
-// `;
+const CREATE_SALE = gql`
+  mutation CreateSale($privateKey: String!, $input: CreateSaleInput!) {
+    createSale(privateKey: $privateKey, input: $input) {
+      quantity
+      price
+    }
+  }
+`;
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -128,9 +128,10 @@ const Dashboard = () => {
     },
   ]);
 
-  // const landToken = useQuery(LAND_TOKEN);
-
-  // const [createSale, { data, loading, error }] = useMutation(CREATE_SALE);
+  const landTokenResponse = useQuery(LAND_TOKEN, {
+    variables: { id: "ef9b8086-93a2-4a5e-8194-c0e94ecf4840" },
+  });
+  const [createSale, createSaleResponse] = useMutation(CREATE_SALE);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
@@ -144,25 +145,6 @@ const Dashboard = () => {
   const [numTokensToEdit, setNumTokensToEdit] = useState(0);
   const [pricePerToken, setPricePerToken] = useState(0);
 
-  const handleAddTokenForSale = async () => {
-    if (numTokensForSale > numTokensOwned) {
-      alert("You cannot enlist more tokens than you own.");
-      return;
-    }
-
-    // createSale({ variables: { privateKey: } });
-
-    const tokenWithDetails = {
-      ...selectedToken,
-      numTokensOwned,
-      numTokensForSale,
-    };
-
-    setTokensForSale([...tokensForSale, tokenWithDetails]);
-    setIsTokenSelected(false);
-    setIsDialogOpen(false);
-  };
-
   useEffect(() => {
     // Fetch the token data based on the tokenID
     console.log("TokenID from URL:", tokenId); // Log the tokenID
@@ -174,7 +156,7 @@ const Dashboard = () => {
     setToken(foundToken);
   }, [tokenId]);
 
-  if (!token) {
+  if (landTokenResponse.loading) {
     return <div>Loading...</div>; // Handle the case where the token is not found
   }
   // const chartData = token.
@@ -194,6 +176,35 @@ const Dashboard = () => {
   //   setTokensForSale(updatedTokensForSale);
   //   setIsBuyDialogOpen(false);
   // };
+
+  const handleAddTokenForSale = () => {
+    // if (numTokensForSale > numTokensOwned) {
+    //   alert("You cannot enlist more tokens than you own.");
+    //   return;
+    // }
+    console.log("Here");
+    createSale({
+      variables: {
+        privateKey:
+          "0xf214f2b2cd398c806f84e317254e0f0b801d0643303237d97a22a48e01628897",
+        input: {
+          landTokenId: landTokenResponse.data.landToken.id,
+          quantity: numTokensForSale,
+          price: pricePerToken,
+        },
+      },
+    });
+
+    const tokenWithDetails = {
+      ...selectedToken,
+      numTokensOwned,
+      numTokensForSale,
+    };
+
+    setTokensForSale([...tokensForSale, tokenWithDetails]);
+    setIsTokenSelected(false);
+    setIsDialogOpen(false);
+  };
 
   const handleBuyTokens = async () => {
     try {
