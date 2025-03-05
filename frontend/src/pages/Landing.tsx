@@ -6,7 +6,7 @@ import meta from "../../src/assets/meta.png";
 // import { Input } from "../components/ui/input";
 // import { Label } from "../components/ui/label";
 import { checkUserApi } from "../api";
-import { useMutation } from "@tanstack/react-query";
+// import { useMutation } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/common/SearchBar";
@@ -17,26 +17,26 @@ const Landing = () => {
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const checkUserMutation = useMutation({
-    mutationFn: checkUserApi,
-    onSuccess: (data) => {
-      console.log(data);
-      if (data.sessionToken) {
-        useStore.getState().setAuth(data.sessionToken, account);
-        console.log("Has account");
-      }
-    },
-    onError: (err) => {
-      if (err.status === 404) {
-        navigate("/dashboard/");
-        console.log("Doesn't have any account");
-      } else {
-        navigate("/dashboard/");
+  // const checkUserMutation = useMutation({
+  //   mutationFn: checkUserApi,
+  //   onSuccess: (data) => {
+  //     console.log(data);
+  //     if (data.sessionToken) {
+  //       useStore.getState().setAuth(data.sessionToken, account);
+  //       console.log("Has account");
+  //     }
+  //   },
+  //   onError: (err) => {
+  //     if (err.status === 404) {
+  //       navigate("/dashboard/");
+  //       console.log("Doesn't have any account");
+  //     } else {
+  //       navigate("/dashboard/");
 
-        alert("An error occurred while checking user.");
-      }
-    },
-  });
+  //       alert("An error occurred while checking user.");
+  //     }
+  //   },
+  // });
 
   useEffect(() => {
     if (window.ethereum) {
@@ -60,7 +60,7 @@ const Landing = () => {
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state
-      checkUserMutation.mutate(selectedAccount); // Pass the account to the mutation
+      // checkUserMutation.mutate(selectedAccount); // Pass the account to the mutation
     } catch (error) {
       alert(`Something went wrong: ${error.message}`);
     }
