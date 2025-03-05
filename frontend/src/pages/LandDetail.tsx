@@ -129,7 +129,7 @@ const Dashboard = () => {
   ]);
 
   const landTokenResponse = useQuery(LAND_TOKEN, {
-    variables: { id: "ef9b8086-93a2-4a5e-8194-c0e94ecf4840" },
+    variables: { id: "68cae590-18a9-48d5-beed-a084351d0fc4" },
   });
   const [createSale, createSaleResponse] = useMutation(CREATE_SALE);
 
@@ -182,11 +182,11 @@ const Dashboard = () => {
     //   alert("You cannot enlist more tokens than you own.");
     //   return;
     // }
-    console.log("Here");
+    console.log(numTokensForSale, pricePerToken);
     createSale({
       variables: {
         privateKey:
-          "0xf214f2b2cd398c806f84e317254e0f0b801d0643303237d97a22a48e01628897",
+          "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
         input: {
           landTokenId: landTokenResponse.data.landToken.id,
           quantity: numTokensForSale,

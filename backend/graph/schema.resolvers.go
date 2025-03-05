@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 	"github.com/ludeathfer/TerraTokens/backend/graph/model"
 	"github.com/ludeathfer/TerraTokens/backend/middleware"
@@ -205,6 +206,14 @@ func (r *mutationResolver) CreateLandToken(ctx context.Context, privateKey strin
 	}
 
 	log.Printf("FractionalizeLand Transaction sent: %s", tx.Hash().Hex())
+
+	userAddress := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	tx, err = bcc.Land.TransferFractionalTokens(transactor, userAddress, big.NewInt(1), big.NewInt(int64(input.TotalTokens)))
+	if err != nil {
+		return nil, fmt.Errorf("failed transferring tokens: %v", err)
+	}
+
+	log.Printf("TransferFractionalTokens Transaction sent: %s", tx.Hash().Hex())
 
 	eventLog, err := blockchain.WaitForEvent(ctx, bcc, tx.Hash().Hex())
 	if err != nil {
@@ -511,6 +520,7 @@ func (r *mutationResolver) CreateSale(ctx context.Context, privateKey string, in
 		&lt.PropertyType, &lt.PropertySize, &lt.PropertySizeUnit, &lt.Landmark, &lt.DistanceFromLandmark,
 		&lt.DistanceUnit, &lt.PropertyDescription, &lt.Latitude, &lt.Longitude,
 	)
+	lt.LandID = 1
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("land token not found")

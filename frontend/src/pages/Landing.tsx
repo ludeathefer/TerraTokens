@@ -82,7 +82,7 @@ const Landing = () => {
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state
-      // login({ variables: { publicKey: selectedAccount } });
+      login({ variables: { publicKey: selectedAccount } });
     } catch (error) {
       alert(`Something went wrong: ${error.message}`);
     }
