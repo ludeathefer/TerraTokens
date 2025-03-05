@@ -13,6 +13,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Input } from "../components/ui/input";
+import { gql, useMutation } from "@apollo/client";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+const REGISTER = gql`
+  mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      publicKey
+      username
+    }
+  }
+`;
 
 const formSchema = z.object({
   metaMaskAccount: z.string(),
@@ -31,39 +45,58 @@ const Signup = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      metaMaskAccount: "",
       name: "",
       email: "",
       phone: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("submitted", values);
+  async function connectMetamaskWallet(): Promise<void> {
+    if (!window.ethereum) {
+      alert("MetaMask is not installed!");
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      const selectedAccount = accounts[0];
+      form.setValue("metaMaskAccount", selectedAccount);
+    } catch (error) {
+      alert(`Something went wrong: ${error.message}`);
+    }
+  }
+  const navigate = useNavigate();
+
+  const [createUser, { data, error }] = useMutation(REGISTER);
+  if (data) {
+    navigate("/");
   }
 
+  if (error) {
+    toast.error("Error signing in");
+  }
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    createUser({
+      variables: {
+        input: {
+          publicKey: values.metaMaskAccount,
+          username: values.name,
+          phone: values.phone,
+          email: values.email,
+        },
+      },
+    });
+  }
+
+  useEffect(() => {
+    connectMetamaskWallet();
+  }, []);
+
   return (
-<<<<<<< HEAD
-    <div className="flex flex-col   justify-center items-center h-screen w-screen ">
-      <div className=" items-center bg-[black] flex justify-center flex-col  w-1/3  rounded-3xl pt-10 pb-5 bg-gradient-to-r from-teal-900 to-zinc-900 ">
-        <img src={logoSignup} className=" w-full h-24 object-contain " />
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 w-full px-10 py-5"
-          >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-=======
     <div className="w-screen h-screen bg-no-repeat bg-white flex flex-col">
       <div className="h-24 w-screen flex flex-row items-center justify-between px-14 sticky z-10">
         <h1 className="text-2xl font-semibold text-black">TerraTokens</h1>
@@ -81,14 +114,18 @@ const Signup = () => {
               >
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="metaMaskAccount"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-black">
                         Metamask Account
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Name" {...field} />
+                        <Input
+                          disabled
+                          placeholder="Metamask Public Key"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -146,7 +183,6 @@ const Signup = () => {
             <img
               src="/src/assets/signup-bg.png"
               className="object-contain h-[34rem]"
->>>>>>> main
             />
           </div>
           <h1 className="font-semibold text-black text-3xl text-center">

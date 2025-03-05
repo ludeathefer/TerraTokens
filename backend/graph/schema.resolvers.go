@@ -36,21 +36,15 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 		}
 	}()
 
-	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
-	}
-
 	// Generate new UUID for user
 	id := uuid.New()
 
 	// Insert the user
 	query := `
-		INSERT INTO users (id, public_key, username, phone, email, password)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO users (id, public_key, username, phone, email)
+		VALUES (?, ?, ?, ?, ?)
 	`
-	_, err = tx.ExecContext(ctx, query, id.String(), input.PublicKey, input.Username, input.Phone, input.Email, hashedPassword)
+	_, err = tx.ExecContext(ctx, query, id.String(), input.PublicKey, input.Username, input.Phone, input.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert user: %w", err)
 	}
@@ -630,7 +624,6 @@ func (r *mutationResolver) CreateSale(ctx context.Context, privateKey string, in
 		Seller:    seller,
 		CreatedAt: createdAt,
 	}, nil
-
 }
 
 // UpdateSale is the resolver for the updateSale field.
@@ -1038,19 +1031,19 @@ func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, er
 }
 
 // Login is the resolver for the login field.
-func (r *queryResolver) Login(ctx context.Context, email string, password string) (*model.LoginResponse, error) {
+func (r *queryResolver) Login(ctx context.Context, publicKey string) (*model.LoginResponse, error) {
 	db := r.Database
 
 	query := `
-			SELECT
-				u.id, u.public_key, u.username, u.phone, u.email, u.password, u.created_at, u.updated_at,
-				r.id, r.name, r.description
-			FROM users u
-			LEFT JOIN user_roles ur ON u.id = ur.user_id
-			LEFT JOIN roles r ON ur.role_id = r.id
-			WHERE u.email = ?
-		`
-	rows, err := db.QueryContext(ctx, query, email)
+				SELECT
+					u.id, u.public_key, u.username, u.phone, u.email, u.created_at, u.updated_at,
+					r.id, r.name, r.description
+				FROM users u
+				LEFT JOIN user_roles ur ON u.id = ur.user_id
+				LEFT JOIN roles r ON ur.role_id = r.id
+				WHERE u.public_key = ?
+			`
+	rows, err := db.QueryContext(ctx, query, publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
@@ -1061,7 +1054,7 @@ func (r *queryResolver) Login(ctx context.Context, email string, password string
 	for rows.Next() {
 		user = &model.User{}
 		role := &model.Role{}
-		err := rows.Scan(&user.ID, &user.PublicKey, &user.Username, &user.Email, &user.Phone, &user.Password, &user.CreatedAt, &user.UpdatedAt, &role.ID, &role.Name, &role.Description)
+		err := rows.Scan(&user.ID, &user.PublicKey, &user.Username, &user.Email, &user.Phone, &user.CreatedAt, &user.UpdatedAt, &role.ID, &role.Name, &role.Description)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
 		}
@@ -1070,11 +1063,6 @@ func (r *queryResolver) Login(ctx context.Context, email string, password string
 	}
 
 	if user == nil {
-		return nil, fmt.Errorf("invalid credentials")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 

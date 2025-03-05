@@ -7,6 +7,15 @@ import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { checkUserApi } from "../api";
 import { useStore } from "../hooks/use-store";
+import { useQuery, gql } from "@apollo/client";
+
+// const LOGIN = gql`
+//   query Login {
+//     login {
+
+//     }
+//   }
+// `;
 
 function Login() {
   const [isMetamaskInstalled, setIsMetamaskInstalled] =
@@ -14,23 +23,23 @@ function Login() {
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const checkUserMutation = useMutation({
-    mutationFn: checkUserApi,
-    onSuccess: (data) => {
-      console.log(data);
-      if (data.sessionToken) {
-        useStore.getState().setAuth(data.sessionToken, account);
-        navigate("/dashboard"); // Navigate after setting auth
-      }
-    },
-    onError: (err) => {
-      if (err.status === 404) {
-        navigate("/sign-up");
-      } else {
-        alert("An error occurred while checking user.");
-      }
-    },
-  });
+  // const checkUserMutation = useMutation({
+  //   mutationFn: checkUserApi,
+  //   onSuccess: (data) => {
+  //     console.log(data);
+  //     if (data.sessionToken) {
+  //       useStore.getState().setAuth(data.sessionToken, account);
+  //       navigate("/dashboard"); // Navigate after setting auth
+  //     }
+  //   },
+  //   onError: (err) => {
+  //     if (err.status === 404) {
+  //       navigate("/sign-up");
+  //     } else {
+  //       alert("An error occurred while checking user.");
+  //     }
+  //   },
+  // });
 
   useEffect(() => {
     if (window.ethereum) {
@@ -54,7 +63,8 @@ function Login() {
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state
-      checkUserMutation.mutate(selectedAccount); // Pass the account to the mutation
+      console.log(selectedAccount);
+      // checkUserMutation.mutate(selectedAccount); // Pass the account to the mutation
     } catch (error) {
       alert(`Something went wrong: ${error.message}`);
     }

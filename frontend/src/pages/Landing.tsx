@@ -1,21 +1,44 @@
 import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import meta from "../../src/assets/meta.png";
-// import { Separator } from "../components/ui/separator";
-// import { Search } from "lucide-react";
-// import { Input } from "../components/ui/input";
-// import { Label } from "../components/ui/label";
+import { Separator } from "../components/ui/separator";
+import { Search } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { checkUserApi } from "../api";
 // import { useMutation } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/common/SearchBar";
+import { gql, useLazyQuery } from "@apollo/client";
+
+const LOGIN = gql`
+  query Login($publicKey: String!) {
+    login(publicKey: $publicKey) {
+      token
+      User {
+        id
+        publicKey
+      }
+    }
+  }
+`;
 
 const Landing = () => {
   const [isMetamaskInstalled, setIsMetamaskInstalled] =
     useState<boolean>(false);
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
+  const setAuth = useStore((state) => state.setAuth);
+
+  const [login, { data, error }] = useLazyQuery(LOGIN);
+  if (data) {
+    setAuth(data.login.token, data.login.User.publicKey);
+    navigate("/dashboard");
+  }
+  if (error) {
+    navigate("/sign-up");
+  }
 
   // const checkUserMutation = useMutation({
   //   mutationFn: checkUserApi,
@@ -31,9 +54,8 @@ const Landing = () => {
   //       navigate("/dashboard/");
   //       console.log("Doesn't have any account");
   //     } else {
-  //       navigate("/dashboard/");
-
   //       alert("An error occurred while checking user.");
+  //       navigate("/sign-up/");
   //     }
   //   },
   // });
@@ -60,7 +82,7 @@ const Landing = () => {
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state
-      // checkUserMutation.mutate(selectedAccount); // Pass the account to the mutation
+      // login({ variables: { publicKey: selectedAccount } });
     } catch (error) {
       alert(`Something went wrong: ${error.message}`);
     }

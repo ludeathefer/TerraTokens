@@ -35,7 +35,7 @@ const FilterDialog = ({ onApplyFilters }) => {
   };
 
   return (
-    <DialogContent>
+    <DialogContent className="text-black">
       <DialogHeader>
         <DialogTitle>Filter Transactions</DialogTitle>
       </DialogHeader>
@@ -89,7 +89,7 @@ const FilterDialog = ({ onApplyFilters }) => {
 
         {/* Apply Filters Button */}
         <DialogClose asChild>
-          <Button onClick={handleApplyFilters} className="w-full">
+          <Button onClick={handleApplyFilters} className="w-full ">
             Apply Filters
           </Button>
         </DialogClose>

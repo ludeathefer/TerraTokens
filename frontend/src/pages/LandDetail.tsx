@@ -25,6 +25,40 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
+import { gql, useMutation, useQuery } from "@apollo/client";
+
+// const LAND_TOKEN = gql`
+//   query LandToken($id: UUID!) {
+//     landToken(id: $id) {
+//       id
+//       landId
+//       name
+//       totalTokens
+//       createdAt
+//       updatedAt
+//       currentPrice
+//       propertyType
+//       propertySize
+//       propertySizeUnit
+//       landmark
+//       distanceFromLandmark
+//       distanceUnit
+//       propertyDescription
+//       latitude
+//       longitude
+//     }
+//   }
+// `;
+
+// const CREATE_SALE = gql`
+//   mutation CreateSale($privateKey: String!, $input: CreateSaleInput!) {
+//     createSale(privateKey: $privateKey, input: $input) {
+//       landId
+//       quantity
+//       price
+//     }
+//   }
+// `;
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -93,6 +127,11 @@ const Dashboard = () => {
       size: 4,
     },
   ]);
+
+  // const landToken = useQuery(LAND_TOKEN);
+
+  // const [createSale, { data, loading, error }] = useMutation(CREATE_SALE);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
   const [isTokenSelected, setIsTokenSelected] = useState(false);
@@ -105,11 +144,13 @@ const Dashboard = () => {
   const [numTokensToEdit, setNumTokensToEdit] = useState(0);
   const [pricePerToken, setPricePerToken] = useState(0);
 
-  const handleAddTokenForSale = () => {
+  const handleAddTokenForSale = async () => {
     if (numTokensForSale > numTokensOwned) {
       alert("You cannot enlist more tokens than you own.");
       return;
     }
+
+    // createSale({ variables: { privateKey: } });
 
     const tokenWithDetails = {
       ...selectedToken,
@@ -138,20 +179,64 @@ const Dashboard = () => {
   }
   // const chartData = token.
 
-  const handleBuyTokens = () => {
-    // Update the state to reflect the purchase
-    const updatedTokensForSale = tokensForSale.map((token) => {
-      if (token.tokenCode === selectedTokenForAction.tokenCode) {
-        return {
-          ...token,
-          amount: token.amount - numTokensToBuy,
-        };
-      }
-      return token;
-    });
+  // const handleBuyTokens = () => {
+  //   // Update the state to reflect the purchase
+  //   const updatedTokensForSale = tokensForSale.map((token) => {
+  //     if (token.tokenCode === selectedTokenForAction.tokenCode) {
+  //       return {
+  //         ...token,
+  //         amount: token.amount - numTokensToBuy,
+  //       };
+  //     }
+  //     return token;
+  //   });
 
-    setTokensForSale(updatedTokensForSale);
-    setIsBuyDialogOpen(false);
+  //   setTokensForSale(updatedTokensForSale);
+  //   setIsBuyDialogOpen(false);
+  // };
+
+  const handleBuyTokens = async () => {
+    try {
+      // Ensure MetaMask is available
+      if (!window.ethereum) {
+        alert("Please install MetaMask to proceed.");
+        return;
+      }
+
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+
+      const recipientAddress = "0x2546BcD3c84621e976D8185a91A922aE77ECEc30";
+      const amountInWei = ethers.utils.parseEther(numTokensToBuy.toString());
+
+      const transaction = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: accounts[0],
+            to: recipientAddress,
+            value: amountInWei.toString(),
+          },
+        ],
+      });
+
+      console.log("Transaction initiated:", transaction);
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("User rejected the transaction");
+        // Display a neutral message to the user
+        alert("Transaction not completed.");
+      } else if (error.code === -32603) {
+        console.log("Invalid transaction parameters");
+        // Handle invalid transaction parameters
+        alert("Invalid transaction details.");
+      } else {
+        console.error("Transaction failed:", error);
+        // Handle other errors gracefully
+        alert("An error occurred. Please try again.");
+      }
+    }
   };
 
   const handleEditTokens = () => {
@@ -211,10 +296,10 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex flex-row gap-2">
-                      <Button className="w-8 h-8 border border-black border-opacity-15 shadow-sm">
+                      <Button className="w-8 h-8 border border-black bg-white text-black border-opacity-15 shadow-sm">
                         <Star />
                       </Button>
-                      <Button className="w-8 h-8 border border-black border-opacity-15 shadow-sm ">
+                      <Button className="w-8 h-8 border border-black border-opacity-15 shadow-sm bg-white text-black ">
                         <GitCompare />
                       </Button>
                     </div>
@@ -357,21 +442,23 @@ const Dashboard = () => {
                     <h1 className="font-medium text-black text-md">
                       Tokens For Sale
                     </h1>
-                    {/* Add tokens to sale dialog */}
+                    {/* Add tokens to sale dialog
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
-                          className="h-9 w-9 border border-black border-opacity-10"
+                          className="h-9 w-9 border border-black border-opacity-10 bg-white text-black"
                           // onClick={() => handleAddTokenForSale(token)}
                         >
                           <Plus />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="text-black">
                         <DialogHeader>
-                          <DialogTitle>Select a Token to Add</DialogTitle>
+                          <DialogTitle className="text-black">
+                            Select a Token to Add
+                          </DialogTitle>
                         </DialogHeader>
-                        <ScrollArea className="h-64 bg-white">
+                        <ScrollArea className="h-64 bg-white border border-gray-200 ">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -389,7 +476,7 @@ const Dashboard = () => {
                                 </TableHead>
                               </TableRow>
                             </TableHeader>
-                            <TableBody>
+                            <TableBody className="text-black">
                               {tokens.map((token) => (
                                 <TableRow key={token.tokenCode}>
                                   <TableCell className="text-black text-sm font-normal">
@@ -403,6 +490,7 @@ const Dashboard = () => {
                                   </TableCell>
                                   <TableCell>
                                     <Button
+                                      className="text-black bg-white border "
                                       onClick={() => {
                                         // Open a nested dialog or modal for input fields
                                         setIsTokenSelected(true);
@@ -418,17 +506,23 @@ const Dashboard = () => {
                           </Table>
                         </ScrollArea>
                       </DialogContent>
-                    </Dialog>
+                    </Dialog> */}
                     {/* After pressing select, specify no of tokens dialog */}
-                    <Dialog
-                      open={isTokenSelected}
-                      onOpenChange={setIsTokenSelected}
-                    >
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="h-9 w-9 border border-black border-opacity-10"
+                          // onClick={() => handleAddTokenForSale(token)}
+                        >
+                          <Plus />
+                        </Button>
+                      </DialogTrigger>
+
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Enlist Tokens for Sale</DialogTitle>
                         </DialogHeader>
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-4  ">
                           <div>
                             <Label>No of Tokens You Own</Label>
                             <Input
@@ -449,7 +543,10 @@ const Dashboard = () => {
                               }
                             />
                           </div>
-                          <Button onClick={handleAddTokenForSale}>
+                          <Button
+                            onClick={handleAddTokenForSale}
+                            className="bg-white text-black"
+                          >
                             Add to Sale List
                           </Button>
                         </div>
@@ -460,7 +557,7 @@ const Dashboard = () => {
                       open={isBuyDialogOpen}
                       onOpenChange={setIsBuyDialogOpen}
                     >
-                      <DialogContent>
+                      <DialogContent className="text-black">
                         <DialogHeader>
                           <DialogTitle>Buy Tokens</DialogTitle>
                         </DialogHeader>
@@ -475,7 +572,9 @@ const Dashboard = () => {
                               }
                             />
                           </div>
-                          <Button onClick={handleBuyTokens}>Buy</Button>
+                          <Button className="" onClick={handleBuyTokens}>
+                            Buy
+                          </Button>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -484,7 +583,7 @@ const Dashboard = () => {
                       open={isEditDialogOpen}
                       onOpenChange={setIsEditDialogOpen}
                     >
-                      <DialogContent>
+                      <DialogContent className="text-black">
                         <DialogHeader>
                           <DialogTitle>Edit Tokens</DialogTitle>
                         </DialogHeader>
@@ -509,7 +608,7 @@ const Dashboard = () => {
                               }
                             />
                           </div>
-                          <Button onClick={handleEditTokens}>
+                          <Button onClick={handleEditTokens} className="">
                             Save Changes
                           </Button>
                         </div>

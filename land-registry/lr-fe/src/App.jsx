@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import { contractABI } from "../contractABI";
+// import { ethers } from "ethers";
+// import { contractABI } from "../contractABI";
 
 const DataTable = ({ data, fractionalizeLand }) => {
   const [status, setStatus] = useState("");
@@ -222,12 +222,12 @@ const App = () => {
 
   // Connect to Ethereum provider
   const provider = new ethers.providers.JsonRpcProvider(
-    "http://127.0.0.1:8545/"
+    "http://127.0.0.1:4998/"
   );
 
   // Create a wallet instance
   const privateKey =
-    "ad200aff30fea5d027fea0e4159625c9584b276a5124512a2f26aa9d5928da20"; // Use environment variable
+    "0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e"; // Use environment variable
   const wallet = new ethers.Wallet(privateKey, provider);
 
   // Create a contract instance
