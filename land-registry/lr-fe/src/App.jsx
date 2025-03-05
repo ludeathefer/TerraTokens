@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import { contractABI } from "../contractABI";
+// import { ethers } from "ethers";
+// import { contractABI } from "../contractABI";
 
 const DataTable = ({ data, fractionalizeLand }) => {
   const [status, setStatus] = useState("");

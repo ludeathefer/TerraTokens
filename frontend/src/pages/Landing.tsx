@@ -29,8 +29,13 @@ const Landing = () => {
     useState<boolean>(false);
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
+  const setAuth = useStore((state) => state.setAuth);
 
-  const [login, { error }] = useLazyQuery(LOGIN);
+  const [login, { data, error }] = useLazyQuery(LOGIN);
+  if (data) {
+    setAuth(data.login.token, data.login.User.publicKey);
+    navigate("/dashboard");
+  }
   if (error) {
     navigate("/sign-up");
   }

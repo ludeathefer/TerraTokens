@@ -3,10 +3,31 @@ import { router } from "./Router";
 import { ThemeProvider } from "./components/theme-provider";
 // import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
-import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
+import {
+  ApolloClient,
+  InMemoryCache,
+  ApolloProvider,
+  createHttpLink,
+} from "@apollo/client";
+import { setContext } from "@apollo/client/link/context";
+import { useStore } from "./hooks/use-store";
+
+const httpLink = createHttpLink({
+  uri: "http://localhost:8080/query",
+});
+
+const authLink = setContext((_, { headers }) => {
+  const token = useStore.getState().jwt;
+  return {
+    headers: {
+      ...headers,
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+  };
+});
 
 const client = new ApolloClient({
-  uri: "http://localhost:8080/query",
+  link: authLink.concat(httpLink),
   cache: new InMemoryCache(),
 });
 

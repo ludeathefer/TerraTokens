@@ -83,6 +83,7 @@ func main() {
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:5173", "http://localhost:5174"}
+	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
 	r.Use(cors.New(corsConfig))
 	r.Use(middleware.GinContextToContextMiddleware())
 	r.Use(middleware.AuthMiddleware(cfg.JWT))

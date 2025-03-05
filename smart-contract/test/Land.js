@@ -112,14 +112,20 @@ describe("Land Contract", function () {
       // addr1 hasn't listed any tokens for sale yet
       await expect(
         land.connect(addr1).updateTokenListing(1, 20, ethers.parseEther("1"))
-      ).to.be.revertedWith("Does not have an active listing. List Token for sale.");
+      ).to.be.revertedWith(
+        "Does not have an active listing. List Token for sale."
+      );
     });
 
     it("Should allow seller to update their listing", async function () {
-      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
 
       // Update the listing
-      await land.connect(addr1).updateTokenListing(1, 30, ethers.parseEther("2"));
+      await land
+        .connect(addr1)
+        .updateTokenListing(1, 30, ethers.parseEther("2"));
 
       const updatedListing = await land.activeSaleListings(addr1.address);
       expect(updatedListing.seller).to.equal(addr1.address);
@@ -129,15 +135,21 @@ describe("Land Contract", function () {
     });
 
     it("Should emit TokensListedForSale event on updating listing", async function () {
-      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
 
-      await expect(land.connect(addr1).updateTokenListing(1, 30, ethers.parseEther("2")))
+      await expect(
+        land.connect(addr1).updateTokenListing(1, 30, ethers.parseEther("2"))
+      )
         .to.emit(land, "TokensListedForSale")
         .withArgs(1, addr1.address, 30, ethers.parseEther("2"));
     });
 
     it("Should not allow updating listing with more tokens than owned", async function () {
-      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
 
       await expect(
         land.connect(addr1).updateTokenListing(1, 60, ethers.parseEther("2"))
@@ -145,7 +157,9 @@ describe("Land Contract", function () {
     });
 
     it("Should not allow listing with zero price", async function () {
-      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
 
       await expect(
         land.connect(addr1).updateTokenListing(1, 20, 0)
@@ -153,7 +167,9 @@ describe("Land Contract", function () {
     });
 
     it("Should not allow updating listing to a zero amount", async function () {
-      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
 
       await expect(
         land.connect(addr1).updateTokenListing(1, 0, ethers.parseEther("1"))
@@ -161,7 +177,9 @@ describe("Land Contract", function () {
     });
 
     it("Should not allow updating listing to an invalid price", async function () {
-      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
 
       await expect(
         land.connect(addr1).updateTokenListing(1, 20, ethers.parseEther("0"))
@@ -169,18 +187,18 @@ describe("Land Contract", function () {
     });
 
     it("Should not allow token where landID doesn't match", async function () {
-
-      await land.connect(addr1).listTokensForSale(1, 20, ethers.parseEther("1"));
-      await land.connect(addr2).listTokensForSale(2, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr1)
+        .listTokensForSale(1, 20, ethers.parseEther("1"));
+      await land
+        .connect(addr2)
+        .listTokensForSale(2, 20, ethers.parseEther("1"));
 
       await expect(
         land.connect(addr2).updateTokenListing(1, 20, ethers.parseEther("2"))
       ).to.be.revertedWith("Land ID doesn't match listing");
     });
-
-
   });
-
 
   describe("Cancelling Token Listings", function () {
     beforeEach(async function () {

@@ -43,7 +43,7 @@
     "cmdk": "^1.0.0",
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
-    "ethers": "^5.7.1",
+    "ethers": "^5.8.0",
     "ethers-types": "^3.17.3",
     "framer-motion": "^12.4.10",
     "graphql": "^16.10.0",
