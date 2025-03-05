@@ -74,7 +74,7 @@ const TransactionHistory = () => {
 
           <Button
             variant="outline"
-            className="h-12 bg-white border-black border-opacity-15 shadow-sm"
+            className="h-12 bg-white border-black text-black border-opacity-15 shadow-sm"
           >
             <ArrowRightFromLine />
             Export
@@ -87,14 +87,14 @@ const TransactionHistory = () => {
           <div className="flex flex-row w-full gap-4 items-center">
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="h-10 bg-none border-black border-opacity-15">
+                <Button className="h-10 bg-none border-black border-opacity-15 text-black bg-white ">
                   <Filter />
                   Filter
                 </Button>
               </DialogTrigger>
               <FilterDialog onApplyFilters={handleApplyFilters} />
             </Dialog>
-            <DatePickerWithRange />
+            <DatePickerWithRange className="text-black" />
           </div>
           <ScrollArea className="w-full h-[31rem]">
             <Table>

@@ -222,12 +222,12 @@ const App = () => {
 
   // Connect to Ethereum provider
   const provider = new ethers.providers.JsonRpcProvider(
-    "http://127.0.0.1:8545/"
+    "http://127.0.0.1:4998/"
   );
 
   // Create a wallet instance
   const privateKey =
-    "ad200aff30fea5d027fea0e4159625c9584b276a5124512a2f26aa9d5928da20"; // Use environment variable
+    "0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e"; // Use environment variable
   const wallet = new ethers.Wallet(privateKey, provider);
 
   // Create a contract instance
@@ -237,7 +237,7 @@ const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:8080/");
+        const response = await fetch("http://localhost:8989/");
         if (!response.ok) throw new Error("Network response was not ok");
         const result = await response.json();
         setData(result);

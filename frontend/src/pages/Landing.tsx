@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import meta from "../../src/assets/meta.png";
-// import { Separator } from "../components/ui/separator";
-// import { Search } from "lucide-react";
-// import { Input } from "../components/ui/input";
-// import { Label } from "../components/ui/label";
-// import { checkUserApi } from "../api";
-// import { useMutation } from "@tanstack/react-query";
+import { Separator } from "../components/ui/separator";
+import { Search } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { checkUserApi } from "../api";
+import { useMutation } from "@tanstack/react-query";
 import { useStore } from "../hooks/use-store";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/common/SearchBar";
@@ -51,11 +51,12 @@ const Landing = () => {
   //   },
   //   onError: (err) => {
   //     if (err.status === 404) {
+  //       navigate("/dashboard/");
   //       console.log("Doesn't have any account");
   //     } else {
   //       alert("An error occurred while checking user.");
+  //       navigate("/sign-up/");
   //     }
-  //     navigate("/sign-up/");
   //   },
   // });
 
@@ -81,7 +82,7 @@ const Landing = () => {
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state
-      login({ variables: { publicKey: selectedAccount } });
+      // login({ variables: { publicKey: selectedAccount } });
     } catch (error) {
       alert(`Something went wrong: ${error.message}`);
     }

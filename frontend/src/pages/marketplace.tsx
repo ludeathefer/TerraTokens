@@ -93,7 +93,7 @@ const MarketPlace = () => {
           </div>
           <Button
             variant="outline"
-            className="h-12 bg-white border-black border-opacity-15 shadow-sm"
+            className="h-12 bg-white border-black text-black border-opacity-15 shadow-sm"
             onClick={toggleMapVisibility}
           >
             <Map />

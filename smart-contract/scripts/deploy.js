@@ -3,7 +3,7 @@ const { ethers: rawEthers } = require("ethers");
 
 async function main() {
   // Create a custom provider using ethers.js
-  const customProvider = new rawEthers.JsonRpcProvider("http://localhost:8545");
+  const customProvider = new rawEthers.JsonRpcProvider("http://localhost:4998");
 
   customProvider.pollingInterval = 1000;
 

@@ -61,7 +61,11 @@ const SearchBar = ({
           />
         </div>
       </div>
-      <Button variant="outline" className="h-full" onClick={onSearch}>
+      <Button
+        variant="outline"
+        className="h-full text-black "
+        onClick={onSearch}
+      >
         <Search />
       </Button>
     </div>
