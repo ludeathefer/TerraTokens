@@ -25,7 +25,40 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { ethers } from "ethers";
+import { gql, useMutation, useQuery } from "@apollo/client";
+
+// const LAND_TOKEN = gql`
+//   query LandToken($id: UUID!) {
+//     landToken(id: $id) {
+//       id
+//       landId
+//       name
+//       totalTokens
+//       createdAt
+//       updatedAt
+//       currentPrice
+//       propertyType
+//       propertySize
+//       propertySizeUnit
+//       landmark
+//       distanceFromLandmark
+//       distanceUnit
+//       propertyDescription
+//       latitude
+//       longitude
+//     }
+//   }
+// `;
+
+// const CREATE_SALE = gql`
+//   mutation CreateSale($privateKey: String!, $input: CreateSaleInput!) {
+//     createSale(privateKey: $privateKey, input: $input) {
+//       landId
+//       quantity
+//       price
+//     }
+//   }
+// `;
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -94,6 +127,11 @@ const Dashboard = () => {
       size: 4,
     },
   ]);
+
+  // const landToken = useQuery(LAND_TOKEN);
+
+  // const [createSale, { data, loading, error }] = useMutation(CREATE_SALE);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
   const [isTokenSelected, setIsTokenSelected] = useState(false);
@@ -106,11 +144,13 @@ const Dashboard = () => {
   const [numTokensToEdit, setNumTokensToEdit] = useState(0);
   const [pricePerToken, setPricePerToken] = useState(0);
 
-  const handleAddTokenForSale = () => {
+  const handleAddTokenForSale = async () => {
     if (numTokensForSale > numTokensOwned) {
       alert("You cannot enlist more tokens than you own.");
       return;
     }
+
+    // createSale({ variables: { privateKey: } });
 
     const tokenWithDetails = {
       ...selectedToken,
@@ -408,7 +448,7 @@ const Dashboard = () => {
                     <h1 className="font-medium text-black text-md">
                       Tokens For Sale
                     </h1>
-                    {/* Add tokens to sale dialog */}
+                    {/* Add tokens to sale dialog
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
@@ -474,13 +514,19 @@ const Dashboard = () => {
                           </Table>
                         </ScrollArea>
                       </DialogContent>
-                    </Dialog>
+                    </Dialog> */}
                     {/* After pressing select, specify no of tokens dialog */}
-                    <Dialog
-                      open={isTokenSelected}
-                      onOpenChange={setIsTokenSelected}
-                    >
-                      <DialogContent className="text-black">
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="h-9 w-9 border border-black border-opacity-10"
+                          // onClick={() => handleAddTokenForSale(token)}
+                        >
+                          <Plus />
+                        </Button>
+                      </DialogTrigger>
+
+                      <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Enlist Tokens for Sale</DialogTitle>
                         </DialogHeader>

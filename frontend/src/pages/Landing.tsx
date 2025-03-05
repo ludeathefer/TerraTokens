@@ -12,23 +12,33 @@ import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/common/SearchBar";
 import { gql, useLazyQuery } from "@apollo/client";
 
-// const LOGIN = gql`
-//   query Login($publicKey: String!) {
-//     login(publicKey: $publicKey) {
-//       token
-//       User {
-//         id
-//         publicKey
-//       }
-//     }
-//   }
-// `;
+const LOGIN = gql`
+  query Login($publicKey: String!) {
+    login(publicKey: $publicKey) {
+      token
+      User {
+        id
+        publicKey
+      }
+    }
+  }
+`;
 
 const Landing = () => {
   const [isMetamaskInstalled, setIsMetamaskInstalled] =
     useState<boolean>(false);
   const [account, setAccount] = useState<string | null>(null);
   const navigate = useNavigate();
+  const setAuth = useStore((state) => state.setAuth);
+
+  const [login, { data, error }] = useLazyQuery(LOGIN);
+  if (data) {
+    setAuth(data.login.token, data.login.User.publicKey);
+    navigate("/dashboard");
+  }
+  if (error) {
+    navigate("/sign-up");
+  }
 
   // const checkUserMutation = useMutation({
   //   mutationFn: checkUserApi,
