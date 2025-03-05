@@ -229,7 +229,8 @@ const Dashboard = () => {
               <div className="flex flex-row items-center justify-between p-4">
                 <h1 className="font-semibold text-black text-xl">Watchlist</h1>
                 <Button
-                  className="h-9 w-9 border bg-white border-black border-opacity-10 "
+                  variant="outline"
+                  className="h-9 w-9 bg-white border-black border-opacity-15 shadow-sm"
                   onClick={() => setDialogOpen(true)}
                 >
                   <Plus className=" text-black " />
@@ -324,7 +325,10 @@ const Dashboard = () => {
           <div className="flex flex-col h-[41%] bg-white border border-[#848484] border-opacity-25 shadow-md rounded-md p-4">
             <div className="flex flex-row w-full p-3 items-center justify-between">
               <h1 className="font-semibold text-black text-xl">My Tokens</h1>
-              <Button className="bg-white text-black border border-black border-opacity-15 shadow-md">
+              <Button
+                className=" bg-white border-black border-opacity-15 shadow-sm"
+                variant="outline"
+              >
                 <Filter />
                 Filter
               </Button>

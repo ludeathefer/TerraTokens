@@ -13,9 +13,7 @@ const client = new ApolloClient({
 function App() {
   return (
     <ApolloProvider client={client}>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <RouterProvider router={router} />
-      </ThemeProvider>
+      <RouterProvider router={router} />
       <Toaster />
     </ApolloProvider>
   );
