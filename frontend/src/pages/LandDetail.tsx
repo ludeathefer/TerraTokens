@@ -307,10 +307,16 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex flex-row gap-2">
-                      <Button className="w-8 h-8 border border-black bg-white text-black border-opacity-15 shadow-sm">
+                      <Button
+                        variant="outline"
+                        className="w-8 h-8 border border-black bg-white text-black border-opacity-15 shadow-sm"
+                      >
                         <Star />
                       </Button>
-                      <Button className="w-8 h-8 border border-black border-opacity-15 shadow-sm bg-white text-black ">
+                      <Button
+                        variant="outline"
+                        className="w-8 h-8 border border-black border-opacity-15 shadow-sm bg-white text-black "
+                      >
                         <GitCompare />
                       </Button>
                     </div>
@@ -457,6 +463,7 @@ const Dashboard = () => {
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
+                          variant="outline"
                           className="h-9 w-9 border border-black border-opacity-10 bg-white text-black"
                           // onClick={() => handleAddTokenForSale(token)}
                         >
@@ -501,6 +508,7 @@ const Dashboard = () => {
                                   </TableCell>
                                   <TableCell>
                                     <Button
+                                      variant="outline"
                                       className="text-black bg-white border "
                                       onClick={() => {
                                         // Open a nested dialog or modal for input fields
@@ -555,6 +563,7 @@ const Dashboard = () => {
                             />
                           </div>
                           <Button
+                            variant="outline"
                             onClick={handleAddTokenForSale}
                             className="bg-white text-black"
                           >

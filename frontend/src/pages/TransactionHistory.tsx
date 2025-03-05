@@ -87,7 +87,10 @@ const TransactionHistory = () => {
           <div className="flex flex-row w-full gap-4 items-center">
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="h-10 bg-none border-black border-opacity-15 text-black bg-white ">
+                <Button
+                  variant="outline"
+                  className="h-10 bg-none border-black border-opacity-15 text-black bg-white "
+                >
                   <Filter />
                   Filter
                 </Button>
