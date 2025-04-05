@@ -16,6 +16,16 @@ import { useState } from "react";
 import { tokens, TableToken } from "../components/common/tokensData";
 import WatchlistDialog from "../components/dialogs/WatchlistDialog";
 import Graphs from "../components/common/Graphs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import FilterDialog from "../components/dialogs/FilterDialog";
+import transactions from "../components/common/transactions";
+import { useNavigate } from "react-router-dom";
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -58,9 +68,12 @@ interface WatchListCardProps {
 // };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [watchlist, setWatchlist] = useState<TableToken[]>([]);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
+  const [filters, setFilters] = useState({});
+  const [filteredTokens, setFilteredTokens] = useState<TableToken[]>(tokens);
 
   const toggleTokenSelection = (tokenCode: string) => {
     setSelectedTokens((prevSelected) =>
@@ -69,7 +82,24 @@ const Dashboard = () => {
         : [...prevSelected, tokenCode]
     );
   };
+  const handleApplyFilters = (appliedFilters) => {
+    setFilters(appliedFilters);
+    const filtered = tokens.filter((token) => {
+      const matchesPriceRange =
+        (!appliedFilters.minPrice ||
+          token.tokenPrice >= appliedFilters.minPrice) &&
+        (!appliedFilters.maxPrice ||
+          token.tokenPrice <= appliedFilters.maxPrice);
+      const matchesProfitLoss = appliedFilters.profitLoss
+        ? (appliedFilters.profitLoss === "profit" && token.profitLoss > 0) ||
+          (appliedFilters.profitLoss === "loss" && token.profitLoss <= 0)
+        : true;
 
+      return matchesPriceRange && matchesProfitLoss;
+    });
+
+    setFilteredTokens(filtered);
+  };
   const addToWatchlist = () => {
     const selected = tokens.filter((token) =>
       selectedTokens.includes(token.tokenCode)
@@ -325,13 +355,33 @@ const Dashboard = () => {
           <div className="flex flex-col h-[41%] bg-white border border-[#848484] border-opacity-25 shadow-md rounded-md p-4">
             <div className="flex flex-row w-full p-3 items-center justify-between">
               <h1 className="font-semibold text-black text-xl">My Tokens</h1>
-              <Button
-                className=" bg-white border-black border-opacity-15 shadow-sm"
-                variant="outline"
-              >
-                <Filter />
-                Filter
-              </Button>
+              <div className="flex gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-10 bg-none border-black border-opacity-15 text-black bg-white "
+                    >
+                      <Filter />
+                      Filter
+                    </Button>
+                  </DialogTrigger>
+                  <FilterDialog
+                    onApplyFilters={handleApplyFilters}
+                    showOwnedFilter
+                  />
+                </Dialog>
+                <Button
+                  variant="outline"
+                  className="h-10 bg-none border-black border-opacity-15 text-black bg-white"
+                  onClick={() => {
+                    setFilters({});
+                    setFilteredTokens(tokens); // Reset to show all tokens
+                  }}
+                >
+                  Reset Filters
+                </Button>
+              </div>
             </div>
             <ScrollArea>
               <Table>
@@ -353,8 +403,14 @@ const Dashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tokens.map((token) => (
-                    <TableRow key={token.tokenCode} className="my-2">
+                  {filteredTokens.map((token) => (
+                    <TableRow
+                      key={token.tokenCode}
+                      className="my-2"
+                      onClick={() =>
+                        navigate(`/land-detail/${token.tokenCode}`)
+                      }
+                    >
                       <TableCell>
                         <LandInfo
                           tokenCode={token.tokenCode}

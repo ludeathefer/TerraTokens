@@ -15,7 +15,7 @@ import LandInfo, { getIcon } from "../components/common/LandInfo";
 import { tokens, TableToken } from "../components/common/tokensData";
 import Graphs from "../components/common/Graphs";
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import MapComponent from "../components/common/MapComponent";
 import {
   Dialog,
@@ -26,7 +26,6 @@ import {
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { gql, useMutation, useQuery } from "@apollo/client";
-
 // const LAND_TOKEN = gql`
 //   query LandToken($id: UUID!) {
 //     landToken(id: $id) {
@@ -102,6 +101,7 @@ const WatchListCard = ({
 
 const Dashboard = () => {
   const { tokenId } = useParams(); // Get the tokenID from the URL
+  const navigate = useNavigate();
   const [token, setToken] = useState(null);
   const [tokensForSale, setTokensForSale] = useState([
     {
@@ -150,17 +150,19 @@ const Dashboard = () => {
       return;
     }
 
-    // createSale({ variables: { privateKey: } });
-
     const tokenWithDetails = {
-      ...selectedToken,
-      numTokensOwned,
-      numTokensForSale,
+      ...token, // Use the current token from state instead of selectedToken
+      amount: numTokensForSale,
+      tokenPrice: token.tokenPrice, // Or set a new price if needed
+      profitLoss: 10, // Set initial profit/loss to 0
+      // Add other required fields
     };
 
     setTokensForSale([...tokensForSale, tokenWithDetails]);
     setIsTokenSelected(false);
     setIsDialogOpen(false);
+    setNumTokensOwned(0);
+    setNumTokensForSale(0);
   };
 
   useEffect(() => {
@@ -243,6 +245,7 @@ const Dashboard = () => {
     // Update the state to reflect the edit
     const updatedTokensForSale = tokensForSale.map((token) => {
       if (token.tokenCode === selectedTokenForAction.tokenCode) {
+        console.log(token);
         return {
           ...token,
           amount: numTokensToEdit,
@@ -254,6 +257,8 @@ const Dashboard = () => {
 
     setTokensForSale(updatedTokensForSale);
     setIsEditDialogOpen(false);
+    // setNumTokensToEdit(0);
+    // setPricePerToken(0);
   };
 
   const handleRowClick = (token, index) => {
@@ -519,7 +524,7 @@ const Dashboard = () => {
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
-                          className="h-9 w-9 border border-black border-opacity-10"
+                          className="h-9 w-9 border bg-white text-black hover:bg-gray-50 border-black border-opacity-10"
                           // onClick={() => handleAddTokenForSale(token)}
                         >
                           <Plus />
@@ -581,7 +586,11 @@ const Dashboard = () => {
                               }
                             />
                           </div>
-                          <Button className="" onClick={handleBuyTokens}>
+                          <Button
+                            variant="outline"
+                            className="bg-white text-black"
+                            onClick={handleBuyTokens}
+                          >
                             Buy
                           </Button>
                         </div>
@@ -601,6 +610,7 @@ const Dashboard = () => {
                             <Label>Number of Tokens to List</Label>
                             <Input
                               type="number"
+                              placeholder={numTokensToEdit.toString()}
                               value={numTokensToEdit}
                               onChange={(e) =>
                                 setNumTokensToEdit(Number(e.target.value))
@@ -617,7 +627,11 @@ const Dashboard = () => {
                               }
                             />
                           </div>
-                          <Button onClick={handleEditTokens} className="">
+                          <Button
+                            onClick={handleEditTokens}
+                            variant="outline"
+                            className="text-black bg-white"
+                          >
                             Save Changes
                           </Button>
                         </div>
@@ -677,37 +691,46 @@ const Dashboard = () => {
                     </h1>
                   </div>
                   <ScrollArea className="h-[17rem]  rounded-2xl py-3 px-3 border-x-8 border-white ">
-                    {tokens.map((token) => (
-                      <div className="flex flex-col">
-                        <div
-                          key={token.tokenCode}
-                          className="mb-2 flex flex-row gap-20 "
-                        >
-                          <LandInfo
-                            tokenCode={token.tokenCode}
-                            propertyLocation={token.propertyLocation}
-                            propertyType={token.propertyType}
-                          />
-                          <div className="flex flex-col items-end">
-                            <h3 className="font-bold text-black text-sm">
-                              Rs. {token.tokenPrice}
-                            </h3>
-                            <h4
-                              className={`font-bold text-xs ${
-                                token.profitLoss > 0
-                                  ? "text-[#179413]"
-                                  : "text-red-500"
-                              }`}
-                            >
-                              {token.profitLoss > 0
-                                ? `+${token.profitLoss}%`
-                                : `${token.profitLoss}%`}
-                            </h4>
+                    {tokens
+                      .filter(
+                        (similarToken) =>
+                          similarToken.propertyType === token.propertyType &&
+                          similarToken.tokenCode !== token.tokenCode
+                      )
+                      .map((similarToken) => (
+                        <div className="flex flex-col">
+                          <div
+                            key={similarToken.tokenCode}
+                            className="mb-2 flex flex-row gap-20 cursor-pointer hover:bg-gray-50 p-2 "
+                            onClick={() =>
+                              navigate(`/land-detail/${similarToken.tokenCode}`)
+                            }
+                          >
+                            <LandInfo
+                              tokenCode={similarToken.tokenCode}
+                              propertyLocation={similarToken.propertyLocation}
+                              propertyType={similarToken.propertyType}
+                            />
+                            <div className="flex flex-col items-end">
+                              <h3 className="font-bold text-black text-sm">
+                                Rs. {similarToken.tokenPrice}
+                              </h3>
+                              <h4
+                                className={`font-bold text-xs ${
+                                  similarToken.profitLoss > 0
+                                    ? "text-[#179413]"
+                                    : "text-red-500"
+                                }`}
+                              >
+                                {similarToken.profitLoss > 0
+                                  ? `+${similarToken.profitLoss}%`
+                                  : `${similarToken.profitLoss}%`}
+                              </h4>
+                            </div>
                           </div>
+                          <Separator className="mb-4" />
                         </div>
-                        <Separator className="mb-4" />
-                      </div>
-                    ))}
+                      ))}
                   </ScrollArea>
                 </div>
               </div>

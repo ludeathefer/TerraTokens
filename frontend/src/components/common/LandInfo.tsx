@@ -3,7 +3,7 @@ import { Building, Home, Leaf, Mountain } from "lucide-react";
 interface LandInfoProps {
   tokenCode: string;
   propertyLocation: string;
-  propertyType: "commercial" | "residential" | "agricultural" | "recreational";
+  propertyType: string;
 }
 
 const getIcon = (propertyType: LandInfoProps["propertyType"]) => {

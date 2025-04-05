@@ -18,20 +18,27 @@ import {
 } from "../ui/dialog";
 import { Label } from "../ui/label";
 
-const FilterDialog = ({ onApplyFilters }) => {
+const FilterDialog = ({ onApplyFilters, showOwnedFilter = false }) => {
   const [transactionType, setTransactionType] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [profitLoss, setProfitLoss] = useState("");
+  const [showOnlyOwned, setShowOnlyOwned] = useState(false); // New state for owned filter
 
   const handleApplyFilters = () => {
     const filters = {
       transactionType,
-      minPrice: parseFloat(minPrice),
-      maxPrice: parseFloat(maxPrice),
-      profitLoss: profitLoss === "profit" ? "profit" : "loss",
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      profitLoss:
+        profitLoss === "profit"
+          ? "profit"
+          : profitLoss === "loss"
+          ? "loss"
+          : undefined,
+      showOnlyOwned: showOwnedFilter ? showOnlyOwned : undefined, // Only include if showOwnedFilter is true
     };
-    onApplyFilters(filters); // Call the callback with filters
+    onApplyFilters(filters);
   };
 
   return (
@@ -41,19 +48,20 @@ const FilterDialog = ({ onApplyFilters }) => {
       </DialogHeader>
       <div className="space-y-4">
         {/* Transaction Type Filter */}
-        <div>
-          <Label>Transaction Type</Label>
-          <Select onValueChange={setTransactionType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Bought">Bought</SelectItem>
-              <SelectItem value="Sold">Sold</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
+        {!showOwnedFilter && (
+          <div>
+            <Label>Transaction Type</Label>
+            <Select onValueChange={setTransactionType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Bought">Bought</SelectItem>
+                <SelectItem value="Sold">Sold</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {/* Price Range Filter */}
         <div>
           <Label>Price Range</Label>
@@ -89,7 +97,7 @@ const FilterDialog = ({ onApplyFilters }) => {
 
         {/* Apply Filters Button */}
         <DialogClose asChild>
-          <Button onClick={handleApplyFilters} className="w-full ">
+          <Button onClick={handleApplyFilters} className="w-full">
             Apply Filters
           </Button>
         </DialogClose>
@@ -97,4 +105,5 @@ const FilterDialog = ({ onApplyFilters }) => {
     </DialogContent>
   );
 };
+
 export default FilterDialog;

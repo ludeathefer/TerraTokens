@@ -1,0 +1,3 @@
+Transaction History page maa kunai kunai transaction ko press garda khuldaina detail page
+That is because transaction maa you are fetching the data from transactions.tsx
+Land-detail herda chai you can only view tyo haru ko, which is at tokensData.tsx
