@@ -87,7 +87,7 @@ const MarketCard = ({
           </Label>
         </div>
 
-        <ChartContainer config={chartConfig} className="mx-10 w-full h-auto">
+        <ChartContainer config={chartConfig} className="ml-10 w-full h-auto">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               accessibilityLayer

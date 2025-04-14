@@ -87,7 +87,7 @@ const kathmanduGeoJSON = {
   ],
 };
 
-const MapComponent = ({ city, latLang }) => {
+const MapComponent = ({ city, latLang, height }) => {
   // Default center and zoom level
   // const center: [number, number] = latLang; // Coordinates for Kathmandu
   const zoom: number = 12;
@@ -98,7 +98,7 @@ const MapComponent = ({ city, latLang }) => {
         center={latLang}
         zoom={zoom}
         scrollWheelZoom={true}
-        className="h-96 w-full"
+        className={`h-[${height}px] w-full`}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

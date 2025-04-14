@@ -437,6 +437,7 @@ const Dashboard = () => {
                   <div className="w-full mt-4">
                     <MapComponent
                       city={""}
+                      height={384}
                       latLang={[
                         token.latLang.latitude,
                         token.latLang.longitude,
