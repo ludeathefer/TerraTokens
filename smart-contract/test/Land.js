@@ -275,41 +275,44 @@ describe("Land Contract", function () {
         .listTokensForSale(1, 15, ethers.parseEther("1.5"));
     });
 
-    it("Should allow purchasing tokens from multiple sellers", async function () {
-      const orders = [
-        {
-          seller: addr1.address,
-          landId: 1,
-          amount: 10,
-          pricePerToken: ethers.parseEther("1"),
-        },
-        {
-          seller: addr2.address,
-          landId: 1,
-          amount: 5,
-          pricePerToken: ethers.parseEther("1.5"),
-        },
-      ];
+    /*
+      This is removed as program logic has changed to only allowing buying from one contract. 
+    */
 
-      const totalPrice = ethers.parseEther("17.5"); // (10 * 1) + (5 * 1.5)
-      await land
-        .connect(addr3)
-        .purchaseTokens(1, orders, { value: totalPrice });
+    // it("Should allow purchasing tokens from multiple sellers", async function () {
+    //   const orders = [
+    //     {
+    //       seller: addr1.address,
+    //       landId: 1,
+    //       amount: 10,
+    //       pricePerToken: ethers.parseEther("1"),
+    //     },
+    //     {
+    //       seller: addr2.address,
+    //       landId: 1,
+    //       amount: 5,
+    //       pricePerToken: ethers.parseEther("1.5"),
+    //     },
+    //   ];
 
-      expect(await land.balanceOf(addr3.address, 1)).to.equal(15);
-      expect(await land.balanceOf(addr1.address, 1)).to.equal(40);
-      expect(await land.balanceOf(addr2.address, 1)).to.equal(25);
-    });
+    //   const totalPrice = ethers.parseEther("17.5"); // (10 * 1) + (5 * 1.5)
+    //   await land
+    //     .connect(addr3)
+    //     .purchaseTokens(1, orders, { value: totalPrice });
+
+    //   expect(await land.balanceOf(addr3.address, 1)).to.equal(15);
+    //   expect(await land.balanceOf(addr1.address, 1)).to.equal(40);
+    //   expect(await land.balanceOf(addr2.address, 1)).to.equal(25);
+    // });
 
     it("Should emit TokensPurchased events", async function () {
-      const orders = [
-        {
-          seller: addr1.address,
-          landId: 1,
-          amount: 10,
-          pricePerToken: ethers.parseEther("1"),
-        },
-      ];
+      const orders =
+      {
+        seller: addr1.address,
+        landId: 1,
+        amount: 10,
+        pricePerToken: ethers.parseEther("1"),
+      };
 
       await expect(
         land
@@ -321,14 +324,13 @@ describe("Land Contract", function () {
     });
 
     it("Should handle partial purchases and update listings correctly", async function () {
-      const orders = [
-        {
-          seller: addr1.address,
-          landId: 1,
-          amount: 10,
-          pricePerToken: ethers.parseEther("1"),
-        },
-      ];
+      const orders =
+      {
+        seller: addr1.address,
+        landId: 1,
+        amount: 10,
+        pricePerToken: ethers.parseEther("1"),
+      };
 
       await land
         .connect(addr3)
@@ -339,14 +341,13 @@ describe("Land Contract", function () {
     });
 
     it("Should remove listing when all tokens are purchased", async function () {
-      const orders = [
-        {
-          seller: addr1.address,
-          landId: 1,
-          amount: 20,
-          pricePerToken: ethers.parseEther("1"),
-        },
-      ];
+      const orders =
+      {
+        seller: addr1.address,
+        landId: 1,
+        amount: 20,
+        pricePerToken: ethers.parseEther("1"),
+      };
 
       await land
         .connect(addr3)
@@ -357,14 +358,13 @@ describe("Land Contract", function () {
     });
 
     it("Should refund excess payment", async function () {
-      const orders = [
-        {
-          seller: addr1.address,
-          landId: 1,
-          amount: 10,
-          pricePerToken: ethers.parseEther("1"),
-        },
-      ];
+      const orders =
+      {
+        seller: addr1.address,
+        landId: 1,
+        amount: 10,
+        pricePerToken: ethers.parseEther("1"),
+      };
 
       const initialBalance = await ethers.provider.getBalance(addr3.address);
       const tx = await land
@@ -384,14 +384,13 @@ describe("Land Contract", function () {
     });
 
     it("Should not allow purchase with insufficient payment", async function () {
-      const orders = [
-        {
-          seller: addr1.address,
-          landId: 1,
-          amount: 10,
-          pricePerToken: ethers.parseEther("1"),
-        },
-      ];
+      const orders =
+      {
+        seller: addr1.address,
+        landId: 1,
+        amount: 10,
+        pricePerToken: ethers.parseEther("1"),
+      };
 
       await expect(
         land

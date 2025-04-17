@@ -157,71 +157,55 @@ contract Land is ERC1155, Ownable {
 
     function purchaseTokens(
         uint256 landId,
-        SaleOrder[] calldata orders
+        SaleOrder calldata order
     ) public payable {
         require(isFractionalized[landId], "Land must be fractionalized first");
+        require(order.pricePerToken > 0, "Invalid price");
 
-        uint256 totalAmount;
         uint256 totalPrice;
 
-        // Calculate total amount and price
-        for (uint256 i = 0; i < orders.length; i++) {
-            address seller = orders[i].seller;
+        address seller = order.seller;
 
-            // Verify the seller has an active listing that matches the order
-            SaleOrder memory listing = activeSaleListings[seller];
-            require(listing.amount > 0, "Seller has no active listing");
-            require(listing.landId == landId, "Land ID doesn't match listing");
-            require(
-                listing.amount >= orders[i].amount,
-                "Order amount exceeds listing"
-            );
-            require(
-                listing.pricePerToken == orders[i].pricePerToken,
-                "Price doesn't match listing"
-            );
+        // Verify the seller has an active listing that matches the order
+        SaleOrder storage listing = activeSaleListings[seller];
+        require(listing.amount > 0, "Seller has no active listing");
+        require(listing.landId == landId, "Land ID doesn't match listing");
+        require(listing.amount >= order.amount, "Order amount exceeds listing");
+        require(
+            listing.pricePerToken == order.pricePerToken,
+            "Price doesn't match listing"
+        );
+        require(
+            balanceOf(seller, landId) >= order.amount,
+            "Seller has insufficient balance"
+        );
 
-            require(
-                balanceOf(seller, landId) >= orders[i].amount,
-                "Seller has insufficient balance"
-            );
-
-            totalAmount += orders[i].amount;
-            totalPrice += orders[i].amount * orders[i].pricePerToken;
-        }
-
+        totalPrice = order.amount * order.pricePerToken;
         require(msg.value >= totalPrice, "Insufficient payment");
 
         // Process transfers
-        for (uint256 i = 0; i < orders.length; i++) {
-            SaleOrder memory order = orders[i];
-            address seller = order.seller;
+        // Transfer tokens from seller to buyer
+        safeTransferFrom(seller, msg.sender, landId, order.amount, "");
 
-            // Transfer tokens from seller to buyer
-            safeTransferFrom(seller, msg.sender, landId, order.amount, "");
+        // Transfer payment to seller
+        payable(seller).transfer(totalPrice);
 
-            // Transfer payment to seller
-            uint256 payment = order.amount * order.pricePerToken;
-            payable(seller).transfer(payment);
-
-            // Update or remove the listing
-            SaleOrder storage listing = activeSaleListings[seller];
-            if (listing.amount == order.amount) {
-                // If entire listing is purchased, remove it
-                delete activeSaleListings[seller];
-            } else {
-                // If partial purchase, update the listing amount
-                listing.amount -= order.amount;
-            }
-
-            emit TokensPurchased(
-                landId,
-                msg.sender,
-                seller,
-                order.amount,
-                order.pricePerToken
-            );
+        // Update or remove the listing
+        if (listing.amount == order.amount) {
+            // If entire listing is purchased, remove it
+            delete activeSaleListings[seller];
+        } else {
+            // If partial purchase, update the listing amount
+            listing.amount -= order.amount;
         }
+
+        emit TokensPurchased(
+            landId,
+            msg.sender,
+            seller,
+            order.amount,
+            order.pricePerToken
+        );
 
         // Refund excess payment if any
         uint256 excess = msg.value - totalPrice;
