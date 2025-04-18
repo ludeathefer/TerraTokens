@@ -47,7 +47,6 @@ type CreateUserInput struct {
 }
 
 type LandToken struct {
-	ID                   uuid.UUID `json:"id"`
 	LandID               int32     `json:"landId"`
 	Name                 string    `json:"name"`
 	TotalTokens          int32     `json:"totalTokens"`
@@ -75,7 +74,6 @@ type Mutation struct {
 }
 
 type OwnedToken struct {
-	ID        int        `json:"id"`
 	LandToken *LandToken `json:"landToken"`
 	Quantity  int32      `json:"quantity"`
 }
@@ -127,7 +125,6 @@ type UpdateUserInput struct {
 }
 
 type User struct {
-	ID           uuid.UUID          `json:"id"`
 	PublicKey    string             `json:"publicKey"`
 	Username     string             `json:"username"`
 	Phone        string             `json:"phone"`

@@ -177,23 +177,63 @@ const Dashboard = () => {
   //   setIsBuyDialogOpen(false);
   // };
 
-  const handleAddTokenForSale = () => {
+  const handleAddTokenForSale = async () => {
     // if (numTokensForSale > numTokensOwned) {
     //   alert("You cannot enlist more tokens than you own.");
     //   return;
     // }
-    console.log(numTokensForSale, pricePerToken);
-    createSale({
-      variables: {
-        privateKey:
-          "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        input: {
-          landTokenId: landTokenResponse.data.landToken.id,
-          quantity: numTokensForSale,
-          price: pricePerToken,
+    try {
+      // Ensure MetaMask is available
+      if (!window.ethereum) {
+        alert("Please install MetaMask to proceed.");
+        return;
+      }
+
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+
+      const recipientAddress = "0x2546BcD3c84621e976D8185a91A922aE77ECEc30";
+      const amountInWei = ethers.utils.parseEther(numTokensToBuy.toString());
+
+      const transaction = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: accounts[0],
+            to: recipientAddress,
+            value: amountInWei.toString(),
+          },
+        ],
+      });
+
+      console.log("Transaction initiated:", transaction);
+      createSale({
+        variables: {
+          privateKey:
+            "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+          input: {
+            landTokenId: landTokenResponse.data.landToken.id,
+            quantity: numTokensOwned,
+            price: numTokensForSale,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("User rejected the transaction");
+        // Display a neutral message to the user
+        alert("Transaction not completed.");
+      } else if (error.code === -32603) {
+        console.log("Invalid transaction parameters");
+        // Handle invalid transaction parameters
+        alert("Invalid transaction details.");
+      } else {
+        console.error("Transaction failed:", error);
+        // Handle other errors gracefully
+        alert("An error occurred. Please try again.");
+      }
+    }
 
     const tokenWithDetails = {
       ...selectedToken,
@@ -543,7 +583,7 @@ const Dashboard = () => {
                         </DialogHeader>
                         <div className="flex flex-col gap-4  ">
                           <div>
-                            <Label>No of Tokens You Own</Label>
+                            <Label>No of tokens for sale</Label>
                             <Input
                               type="number"
                               value={numTokensOwned}
@@ -553,7 +593,7 @@ const Dashboard = () => {
                             />
                           </div>
                           <div>
-                            <Label>No of Tokens to Enlist for Sale</Label>
+                            <Label>Price per token</Label>
                             <Input
                               type="number"
                               value={numTokensForSale}

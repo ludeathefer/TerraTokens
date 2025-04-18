@@ -55,7 +55,6 @@ type ComplexityRoot struct {
 		CurrentPrice         func(childComplexity int) int
 		DistanceFromLandmark func(childComplexity int) int
 		DistanceUnit         func(childComplexity int) int
-		ID                   func(childComplexity int) int
 		LandID               func(childComplexity int) int
 		Landmark             func(childComplexity int) int
 		Latitude             func(childComplexity int) int
@@ -91,7 +90,6 @@ type ComplexityRoot struct {
 	}
 
 	OwnedToken struct {
-		ID        func(childComplexity int) int
 		LandToken func(childComplexity int) int
 		Quantity  func(childComplexity int) int
 	}
@@ -141,7 +139,6 @@ type ComplexityRoot struct {
 		BoughtTokens func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		Email        func(childComplexity int) int
-		ID           func(childComplexity int) int
 		OwnedTokens  func(childComplexity int) int
 		Phone        func(childComplexity int) int
 		PublicKey    func(childComplexity int) int
@@ -224,13 +221,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.LandToken.DistanceUnit(childComplexity), true
-
-	case "LandToken.id":
-		if e.complexity.LandToken.ID == nil {
-			break
-		}
-
-		return e.complexity.LandToken.ID(childComplexity), true
 
 	case "LandToken.landId":
 		if e.complexity.LandToken.LandID == nil {
@@ -474,13 +464,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(uuid.UUID), args["input"].(model.UpdateUserInput)), true
 
-	case "OwnedToken.id":
-		if e.complexity.OwnedToken.ID == nil {
-			break
-		}
-
-		return e.complexity.OwnedToken.ID(childComplexity), true
-
 	case "OwnedToken.landToken":
 		if e.complexity.OwnedToken.LandToken == nil {
 			break
@@ -717,13 +700,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Email(childComplexity), true
-
-	case "User.id":
-		if e.complexity.User.ID == nil {
-			break
-		}
-
-		return e.complexity.User.ID(childComplexity), true
 
 	case "User.ownedTokens":
 		if e.complexity.User.OwnedTokens == nil {
@@ -1600,50 +1576,6 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _LandToken_id(ctx context.Context, field graphql.CollectedField, obj *model.LandToken) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LandToken_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uuid.UUID)
-	fc.Result = res
-	return ec.marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LandToken_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LandToken",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UUID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _LandToken_landId(ctx context.Context, field graphql.CollectedField, obj *model.LandToken) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LandToken_landId(ctx, field)
 	if err != nil {
@@ -2439,8 +2371,6 @@ func (ec *executionContext) fieldContext_LoginResponse_User(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -2511,8 +2441,6 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -2621,8 +2549,6 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -2813,8 +2739,6 @@ func (ec *executionContext) fieldContext_Mutation_createLandToken(ctx context.Co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -2931,8 +2855,6 @@ func (ec *executionContext) fieldContext_Mutation_updateLandToken(ctx context.Co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -3049,8 +2971,6 @@ func (ec *executionContext) fieldContext_Mutation_addPriceToLandToken(ctx contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -3536,8 +3456,6 @@ func (ec *executionContext) fieldContext_Mutation_addToWatchlist(ctx context.Con
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -3643,8 +3561,6 @@ func (ec *executionContext) fieldContext_Mutation_removeFromWatchlist(ctx contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -3683,50 +3599,6 @@ func (ec *executionContext) fieldContext_Mutation_removeFromWatchlist(ctx contex
 	if fc.Args, err = ec.field_Mutation_removeFromWatchlist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _OwnedToken_id(ctx context.Context, field graphql.CollectedField, obj *model.OwnedToken) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_OwnedToken_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_OwnedToken_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "OwnedToken",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
 	}
 	return fc, nil
 }
@@ -3770,8 +3642,6 @@ func (ec *executionContext) fieldContext_OwnedToken_landToken(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -4053,8 +3923,6 @@ func (ec *executionContext) fieldContext_Query_users(_ context.Context, field gr
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -4149,8 +4017,6 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -4320,8 +4186,6 @@ func (ec *executionContext) fieldContext_Query_landTokens(_ context.Context, fie
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -4424,8 +4288,6 @@ func (ec *executionContext) fieldContext_Query_landToken(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -4997,8 +4859,6 @@ func (ec *executionContext) fieldContext_Sale_landToken(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -5165,8 +5025,6 @@ func (ec *executionContext) fieldContext_Sale_seller(_ context.Context, field gr
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -5325,8 +5183,6 @@ func (ec *executionContext) fieldContext_TransactedToken_landToken(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -5490,8 +5346,6 @@ func (ec *executionContext) fieldContext_TransactedToken_from(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -5559,8 +5413,6 @@ func (ec *executionContext) fieldContext_TransactedToken_to(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
 			case "publicKey":
 				return ec.fieldContext_User_publicKey(ctx, field)
 			case "username":
@@ -5631,50 +5483,6 @@ func (ec *executionContext) fieldContext_TransactedToken_createdAt(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uuid.UUID)
-	fc.Result = res
-	return ec.marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UUID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6035,8 +5843,6 @@ func (ec *executionContext) fieldContext_User_watchlist(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LandToken_id(ctx, field)
 			case "landId":
 				return ec.fieldContext_LandToken_landId(ctx, field)
 			case "name":
@@ -6115,8 +5921,6 @@ func (ec *executionContext) fieldContext_User_ownedTokens(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_OwnedToken_id(ctx, field)
 			case "landToken":
 				return ec.fieldContext_OwnedToken_landToken(ctx, field)
 			case "quantity":
@@ -8619,11 +8423,6 @@ func (ec *executionContext) _LandToken(ctx context.Context, sel ast.SelectionSet
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LandToken")
-		case "id":
-			out.Values[i] = ec._LandToken_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "landId":
 			out.Values[i] = ec._LandToken_landId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -8902,11 +8701,6 @@ func (ec *executionContext) _OwnedToken(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("OwnedToken")
-		case "id":
-			out.Values[i] = ec._OwnedToken_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "landToken":
 			out.Values[i] = ec._OwnedToken_landToken(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9368,11 +9162,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
-		case "id":
-			out.Values[i] = ec._User_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "publicKey":
 			out.Values[i] = ec._User_publicKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

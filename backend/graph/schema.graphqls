@@ -8,7 +8,6 @@ type Price {
 }
 
 type LandToken {
-  id: UUID!
   landId: Int!
   name: String!
   totalTokens: Int!
@@ -59,7 +58,6 @@ type Sale {
 }
 
 type User {
-  id: UUID!
   publicKey: String!
   username: String!
   phone: String!
