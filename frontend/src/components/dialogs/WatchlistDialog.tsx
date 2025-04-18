@@ -52,8 +52,20 @@ const WatchlistDialog = ({
           ))}
         </ScrollArea>
         <DialogFooter>
-          <Button onClick={onAddToWatchlist}>Confirm</Button>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            className="bg-white text-black"
+            variant="outline"
+            onClick={onAddToWatchlist}
+          >
+            Confirm
+          </Button>
+          <Button
+            className="bg-white text-black"
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -84,27 +84,10 @@ const MarketPlace = () => {
     <div className="bg-[#FAFAFA] w-full h-screen p-6">
       <div className="bg-white rounded-lg shadow-lg w-full h-full border border-[#848484] border-opacity-35 px-8 py-8 flex flex-col">
         {/* Header Section */}
-        <div className="flex flex-row items-center justify-between mb-4">
-          <div className="flex flex-col items-start">
-            <h1 className="font-semibold text-black text-3xl">Marketplace</h1>
-            <h5 className="font-semibold text-[#7d7d7d] text-md">
-              Search through various land tokens
-            </h5>
-          </div>
-          <Button
-            variant="outline"
-            className="h-12 bg-white border-black text-black border-opacity-15 shadow-sm"
-            onClick={toggleMapVisibility}
-          >
-            <Map />
-            {isMapVisible ? "Close Map" : "Open Map"}
-          </Button>
-        </div>
-        <Separator className="mb-4" />
-
-        {/* Map and Search Bar Section */}
         {isMapVisible && (
           <>
+            {/* Map and Search Bar Section */}
+
             {/* Parent container with relative positioning */}
             <div className="relative h-full w-full">
               {/* Search Bar Above Map */}
@@ -121,8 +104,8 @@ const MarketPlace = () => {
               </div>
 
               {/* Map Component */}
-              <div className="flex-1 relative h-full w-full justify-start z-0">
-                <MapComponent city="" latLang={[27.7, 85.3]} />
+              <div className="flex-1 relative min-h-80 max-h-[500px] h-[500px] shrink w-full grow justify-start z-0">
+                <MapComponent city="" height={500} latLang={[27.7, 85.3]} />
               </div>
             </div>
 
@@ -130,7 +113,7 @@ const MarketPlace = () => {
             {/* <div className="mt-4 w-full"> */}
             <SlidingPanel>
               {/* <ScrollArea className="w-full rounded-2xl"> */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4">
+              <div className="flex flex-row items-start justify-start gap-6 p-4 flex-wrap">
                 {tokens.map((token) => (
                   <MarketCard
                     key={token.tokenCode}
@@ -155,6 +138,25 @@ const MarketPlace = () => {
         {/* Default Content (Hidden when Map is Visible) */}
         {!isMapVisible && (
           <>
+            <div className="flex flex-row items-center justify-between mb-4">
+              <div className="flex flex-col items-start">
+                <h1 className="font-semibold text-black text-3xl">
+                  Marketplace
+                </h1>
+                <h5 className="font-semibold text-[#7d7d7d] text-md">
+                  Search through various land tokens
+                </h5>
+              </div>
+              <Button
+                variant="outline"
+                className="h-12 bg-white border-black text-black border-opacity-15 shadow-sm"
+                onClick={toggleMapVisibility}
+              >
+                <Map />
+                {isMapVisible ? "Close Map" : "Open Map"}
+              </Button>
+            </div>
+            <Separator className="mb-4" />
             <div className="w-full h-auto flex flex-row justify-center items-center">
               <SearchBar
                 location={location}

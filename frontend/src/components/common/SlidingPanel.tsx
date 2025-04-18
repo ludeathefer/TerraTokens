@@ -1,20 +1,33 @@
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { motion, useMotionValue, useTransform } from "framer-motion";
+import { useState, useEffect } from "react";
 
 const SlidingPanel = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const height = isCollapsed ? 100 : 500; // Height when collapsed or expanded
+  const [panelHeight, setPanelHeight] = useState(480);
+  const y = useMotionValue(0);
+  const height = useTransform(y, [0, 300], [480, 200]);
+
+  useEffect(() => {
+    const unsubscribe = height.on("change", (latestHeight) => {
+      setPanelHeight(latestHeight);
+    });
+
+    return () => unsubscribe();
+  }, [height]);
+
+  const handleDragEnd = () => {
+    setIsCollapsed(panelHeight < 330);
+  };
 
   return (
     <motion.div
       style={{
         position: "absolute",
         bottom: 0,
-        left: "50%", // Center horizontally
-        transform: "translateX(-50%)", // Center horizontally
-        width: "90%", // Adjust width as needed
-        // maxWidth: , // Set a maximum width
-        height: `${height}px`,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "90%",
+        height: panelHeight,
         zIndex: 30,
         backgroundColor: "white",
         borderRadius: "20px 20px 0 0",
@@ -22,11 +35,11 @@ const SlidingPanel = ({ children }) => {
         overflow: "hidden",
       }}
       className="m-8"
-      animate={{ height: `${height}px` }} // Animate height
-      transition={{ type: "spring", stiffness: 300, damping: 30 }} // Smooth animation
+      animate={{ height: panelHeight }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       {/* Drag Handle */}
-      <div
+      <motion.div
         style={{
           width: "100%",
           height: "24px",
@@ -35,7 +48,18 @@ const SlidingPanel = ({ children }) => {
           alignItems: "center",
           cursor: "grab",
         }}
-        onClick={() => setIsCollapsed(!isCollapsed)} // Toggle collapse on click
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0}
+        dragMomentum={false}
+        onDrag={(_, info) => {
+          y.set(-info.offset.y);
+        }}
+        onDragEnd={handleDragEnd}
+        onClick={() => {
+          setIsCollapsed(!isCollapsed);
+          setPanelHeight(isCollapsed ? 480 : 180);
+        }}
       >
         <div
           style={{
@@ -45,9 +69,9 @@ const SlidingPanel = ({ children }) => {
             borderRadius: "2px",
           }}
         />
-      </div>
+      </motion.div>
 
-      {/* Market Cards */}
+      {/* Content Area */}
       <div
         style={{
           padding: "16px",
@@ -61,4 +85,5 @@ const SlidingPanel = ({ children }) => {
     </motion.div>
   );
 };
+
 export default SlidingPanel;

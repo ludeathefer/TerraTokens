@@ -24,15 +24,16 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import FilterDialog from "../components/dialogs/FilterDialog";
+import { useNavigate } from "react-router-dom";
 
 const TransactionHistory = () => {
   const [filters, setFilters] = useState({});
   const [filteredTransactions, setFilteredTransactions] =
     useState(transactions);
-
-  const openFilterDialog = () => {
-    console.log("Hello");
-  };
+  const navigate = useNavigate();
+  // const openFilterDialog = () => {
+  //   console.log("Hello");
+  // };
 
   const handleApplyFilters = (appliedFilters) => {
     setFilters(appliedFilters);
@@ -122,12 +123,16 @@ const TransactionHistory = () => {
               <TableBody>
                 {filteredTransactions.map((transaction, index) => (
                   <React.Fragment key={index}>
-                    <TableRow>
+                    <TableRow
+                      onClick={() =>
+                        navigate(`/land-detail/${transaction.tokenCode}`)
+                      }
+                    >
                       <TableCell>
                         <LandInfo
                           tokenCode={transaction.tokenCode}
                           propertyLocation={transaction.propertyLocation}
-                          propertyType={"commercial"}
+                          propertyType={transaction.propertyType}
                         />
                       </TableCell>
                       <TableCell className="text-black text-sm font-normal">

@@ -15,7 +15,7 @@ import LandInfo, { getIcon } from "../components/common/LandInfo";
 import { tokens, TableToken } from "../components/common/tokensData";
 import Graphs from "../components/common/Graphs";
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import MapComponent from "../components/common/MapComponent";
 import {
   Dialog,
@@ -26,39 +26,38 @@ import {
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { ethers } from "ethers";
+// const LAND_TOKEN = gql`
+//   query LandToken($id: UUID!) {
+//     landToken(id: $id) {
+//       id
+//       landId
+//       name
+//       totalTokens
+//       createdAt
+//       updatedAt
+//       currentPrice
+//       propertyType
+//       propertySize
+//       propertySizeUnit
+//       landmark
+//       distanceFromLandmark
+//       distanceUnit
+//       propertyDescription
+//       latitude
+//       longitude
+//     }
+//   }
+// `;
 
-const LAND_TOKEN = gql`
-  query LandToken($id: UUID!) {
-    landToken(id: $id) {
-      id
-      landId
-      name
-      totalTokens
-      createdAt
-      updatedAt
-      currentPrice
-      propertyType
-      propertySize
-      propertySizeUnit
-      landmark
-      distanceFromLandmark
-      distanceUnit
-      propertyDescription
-      latitude
-      longitude
-    }
-  }
-`;
-
-const CREATE_SALE = gql`
-  mutation CreateSale($privateKey: String!, $input: CreateSaleInput!) {
-    createSale(privateKey: $privateKey, input: $input) {
-      quantity
-      price
-    }
-  }
-`;
+// const CREATE_SALE = gql`
+//   mutation CreateSale($privateKey: String!, $input: CreateSaleInput!) {
+//     createSale(privateKey: $privateKey, input: $input) {
+//       landId
+//       quantity
+//       price
+//     }
+//   }
+// `;
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -102,6 +101,7 @@ const WatchListCard = ({
 
 const Dashboard = () => {
   const { tokenId } = useParams(); // Get the tokenID from the URL
+  const navigate = useNavigate();
   const [token, setToken] = useState(null);
   const [tokensForSale, setTokensForSale] = useState([
     {
@@ -128,10 +128,9 @@ const Dashboard = () => {
     },
   ]);
 
-  const landTokenResponse = useQuery(LAND_TOKEN, {
-    variables: { id: "68cae590-18a9-48d5-beed-a084351d0fc4" },
-  });
-  const [createSale, createSaleResponse] = useMutation(CREATE_SALE);
+  // const landToken = useQuery(LAND_TOKEN);
+
+  // const [createSale, { data, loading, error }] = useMutation(CREATE_SALE);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
@@ -145,6 +144,27 @@ const Dashboard = () => {
   const [numTokensToEdit, setNumTokensToEdit] = useState(0);
   const [pricePerToken, setPricePerToken] = useState(0);
 
+  const handleAddTokenForSale = async () => {
+    if (numTokensForSale > numTokensOwned) {
+      alert("You cannot enlist more tokens than you own.");
+      return;
+    }
+
+    const tokenWithDetails = {
+      ...token, // Use the current token from state instead of selectedToken
+      amount: numTokensForSale,
+      tokenPrice: token.tokenPrice, // Or set a new price if needed
+      profitLoss: 10, // Set initial profit/loss to 0
+      // Add other required fields
+    };
+
+    setTokensForSale([...tokensForSale, tokenWithDetails]);
+    setIsTokenSelected(false);
+    setIsDialogOpen(false);
+    setNumTokensOwned(0);
+    setNumTokensForSale(0);
+  };
+
   useEffect(() => {
     // Fetch the token data based on the tokenID
     console.log("TokenID from URL:", tokenId); // Log the tokenID
@@ -156,7 +176,7 @@ const Dashboard = () => {
     setToken(foundToken);
   }, [tokenId]);
 
-  if (landTokenResponse.loading) {
+  if (!token) {
     return <div>Loading...</div>; // Handle the case where the token is not found
   }
   // const chartData = token.
@@ -176,75 +196,6 @@ const Dashboard = () => {
   //   setTokensForSale(updatedTokensForSale);
   //   setIsBuyDialogOpen(false);
   // };
-
-  const handleAddTokenForSale = async () => {
-    // if (numTokensForSale > numTokensOwned) {
-    //   alert("You cannot enlist more tokens than you own.");
-    //   return;
-    // }
-    try {
-      // Ensure MetaMask is available
-      if (!window.ethereum) {
-        alert("Please install MetaMask to proceed.");
-        return;
-      }
-
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      const recipientAddress = "0x2546BcD3c84621e976D8185a91A922aE77ECEc30";
-      const amountInWei = ethers.utils.parseEther(numTokensToBuy.toString());
-
-      const transaction = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: accounts[0],
-            to: recipientAddress,
-            value: amountInWei.toString(),
-          },
-        ],
-      });
-
-      console.log("Transaction initiated:", transaction);
-      createSale({
-        variables: {
-          privateKey:
-            "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-          input: {
-            landTokenId: landTokenResponse.data.landToken.id,
-            quantity: numTokensOwned,
-            price: numTokensForSale,
-          },
-        },
-      });
-    } catch (error) {
-      if (error.code === 4001) {
-        console.log("User rejected the transaction");
-        // Display a neutral message to the user
-        alert("Transaction not completed.");
-      } else if (error.code === -32603) {
-        console.log("Invalid transaction parameters");
-        // Handle invalid transaction parameters
-        alert("Invalid transaction details.");
-      } else {
-        console.error("Transaction failed:", error);
-        // Handle other errors gracefully
-        alert("An error occurred. Please try again.");
-      }
-    }
-
-    const tokenWithDetails = {
-      ...selectedToken,
-      numTokensOwned,
-      numTokensForSale,
-    };
-
-    setTokensForSale([...tokensForSale, tokenWithDetails]);
-    setIsTokenSelected(false);
-    setIsDialogOpen(false);
-  };
 
   const handleBuyTokens = async () => {
     try {
@@ -294,6 +245,7 @@ const Dashboard = () => {
     // Update the state to reflect the edit
     const updatedTokensForSale = tokensForSale.map((token) => {
       if (token.tokenCode === selectedTokenForAction.tokenCode) {
+        console.log(token);
         return {
           ...token,
           amount: numTokensToEdit,
@@ -305,6 +257,8 @@ const Dashboard = () => {
 
     setTokensForSale(updatedTokensForSale);
     setIsEditDialogOpen(false);
+    // setNumTokensToEdit(0);
+    // setPricePerToken(0);
   };
 
   const handleRowClick = (token, index) => {
@@ -483,6 +437,7 @@ const Dashboard = () => {
                   <div className="w-full mt-4">
                     <MapComponent
                       city={""}
+                      height={384}
                       latLang={[
                         token.latLang.latitude,
                         token.latLang.longitude,
@@ -570,7 +525,7 @@ const Dashboard = () => {
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
-                          className="h-9 w-9 border border-black border-opacity-10"
+                          className="h-9 w-9 border bg-white text-black hover:bg-gray-50 border-black border-opacity-10"
                           // onClick={() => handleAddTokenForSale(token)}
                         >
                           <Plus />
@@ -583,7 +538,7 @@ const Dashboard = () => {
                         </DialogHeader>
                         <div className="flex flex-col gap-4  ">
                           <div>
-                            <Label>No of tokens for sale</Label>
+                            <Label>No of Tokens You Own</Label>
                             <Input
                               type="number"
                               value={numTokensOwned}
@@ -593,7 +548,7 @@ const Dashboard = () => {
                             />
                           </div>
                           <div>
-                            <Label>Price per token</Label>
+                            <Label>No of Tokens to Enlist for Sale</Label>
                             <Input
                               type="number"
                               value={numTokensForSale}
@@ -632,7 +587,11 @@ const Dashboard = () => {
                               }
                             />
                           </div>
-                          <Button className="" onClick={handleBuyTokens}>
+                          <Button
+                            variant="outline"
+                            className="bg-white text-black"
+                            onClick={handleBuyTokens}
+                          >
                             Buy
                           </Button>
                         </div>
@@ -652,6 +611,7 @@ const Dashboard = () => {
                             <Label>Number of Tokens to List</Label>
                             <Input
                               type="number"
+                              placeholder={numTokensToEdit.toString()}
                               value={numTokensToEdit}
                               onChange={(e) =>
                                 setNumTokensToEdit(Number(e.target.value))
@@ -668,7 +628,11 @@ const Dashboard = () => {
                               }
                             />
                           </div>
-                          <Button onClick={handleEditTokens} className="">
+                          <Button
+                            onClick={handleEditTokens}
+                            variant="outline"
+                            className="text-black bg-white"
+                          >
                             Save Changes
                           </Button>
                         </div>
@@ -728,37 +692,46 @@ const Dashboard = () => {
                     </h1>
                   </div>
                   <ScrollArea className="h-[17rem]  rounded-2xl py-3 px-3 border-x-8 border-white ">
-                    {tokens.map((token) => (
-                      <div className="flex flex-col">
-                        <div
-                          key={token.tokenCode}
-                          className="mb-2 flex flex-row gap-20 "
-                        >
-                          <LandInfo
-                            tokenCode={token.tokenCode}
-                            propertyLocation={token.propertyLocation}
-                            propertyType={token.propertyType}
-                          />
-                          <div className="flex flex-col items-end">
-                            <h3 className="font-bold text-black text-sm">
-                              Rs. {token.tokenPrice}
-                            </h3>
-                            <h4
-                              className={`font-bold text-xs ${
-                                token.profitLoss > 0
-                                  ? "text-[#179413]"
-                                  : "text-red-500"
-                              }`}
-                            >
-                              {token.profitLoss > 0
-                                ? `+${token.profitLoss}%`
-                                : `${token.profitLoss}%`}
-                            </h4>
+                    {tokens
+                      .filter(
+                        (similarToken) =>
+                          similarToken.propertyType === token.propertyType &&
+                          similarToken.tokenCode !== token.tokenCode
+                      )
+                      .map((similarToken) => (
+                        <div className="flex flex-col">
+                          <div
+                            key={similarToken.tokenCode}
+                            className="mb-2 flex flex-row gap-20 cursor-pointer hover:bg-gray-50 p-2 "
+                            onClick={() =>
+                              navigate(`/land-detail/${similarToken.tokenCode}`)
+                            }
+                          >
+                            <LandInfo
+                              tokenCode={similarToken.tokenCode}
+                              propertyLocation={similarToken.propertyLocation}
+                              propertyType={similarToken.propertyType}
+                            />
+                            <div className="flex flex-col items-end">
+                              <h3 className="font-bold text-black text-sm">
+                                Rs. {similarToken.tokenPrice}
+                              </h3>
+                              <h4
+                                className={`font-bold text-xs ${
+                                  similarToken.profitLoss > 0
+                                    ? "text-[#179413]"
+                                    : "text-red-500"
+                                }`}
+                              >
+                                {similarToken.profitLoss > 0
+                                  ? `+${similarToken.profitLoss}%`
+                                  : `${similarToken.profitLoss}%`}
+                              </h4>
+                            </div>
                           </div>
+                          <Separator className="mb-4" />
                         </div>
-                        <Separator className="mb-4" />
-                      </div>
-                    ))}
+                      ))}
                   </ScrollArea>
                 </div>
               </div>
