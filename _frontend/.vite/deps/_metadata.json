@@ -2,39 +2,7 @@
   "hash": "0c8b703e",
   "configHash": "97039650",
   "lockfileHash": "9dce69c5",
-  "browserHash": "c5f0bf35",
-  "optimized": {
-    "react-dom/client": {
-      "src": "../../node_modules/react-dom/client.js",
-      "file": "react-dom_client.js",
-      "fileHash": "7fd8b798",
-      "needsInterop": true
-    },
-    "@apollo/client": {
-      "src": "../../node_modules/@apollo/client/index.js",
-      "file": "@apollo_client.js",
-      "fileHash": "84f3c221",
-      "needsInterop": false
-    },
-    "ethers": {
-      "src": "../../node_modules/ethers/lib.esm/index.js",
-      "file": "ethers.js",
-      "fileHash": "83cbb1cc",
-      "needsInterop": false
-    },
-    "react": {
-      "src": "../../node_modules/react/index.js",
-      "file": "react.js",
-      "fileHash": "037b6407",
-      "needsInterop": true
-    }
-  },
-  "chunks": {
-    "chunk-Z4L4S4OG": {
-      "file": "chunk-Z4L4S4OG.js"
-    },
-    "chunk-WOOG5QLI": {
-      "file": "chunk-WOOG5QLI.js"
-    }
-  }
+  "browserHash": "bc090417",
+  "optimized": {},
+  "chunks": {}
 }
