@@ -1,6 +1,13 @@
 scalar Time
-scalar UUID
 
+directive @auth(requires: [String!] = []) on FIELD_DEFINITION
+
+directive @goTag(
+  key: String!
+  value: String
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+# models
 type Price {
   id: ID!
   date: Time!
@@ -72,6 +79,7 @@ type User {
   soldTokens: [TransactedToken!]!
 }
 
+# inputs and responses
 input CreateLandTokenInput {
   name: String!
   totalTokens: Int!
@@ -107,7 +115,7 @@ input CreatePriceInput {
 }
 
 input CreateSaleInput {
-  landTokenId: UUID!
+  landTokenId: Int!
   quantity: Int!
   price: Float!
 }
@@ -129,33 +137,28 @@ type LoginResponse {
 
 type Query {
   users: [User!]! @auth(requires: ["admin"])
-  user(id: UUID!): User @auth
+  user(publicKey: String!): User @auth
   login(publicKey: String!): LoginResponse!
   landTokens: [LandToken!]! @auth
-  landToken(id: UUID!): LandToken @auth
+  landToken(publicKey: String!): LandToken @auth
   sales: [Sale!]! @auth
   sale(id: ID!): Sale @auth
 }
 
 type Mutation {
   createUser(input: CreateUserInput!): User!
-  updateUser(id: UUID!, input: UpdateUserInput!): User! @auth
-  deleteUser(id: UUID!): Boolean! @auth(requires: ["admin"])
-  createLandToken(
-    privateKey: String!
-    input: CreateLandTokenInput!
-  ): LandToken! @auth(requires: ["admin"])
-  updateLandToken(id: UUID!, input: CreateLandTokenInput!): LandToken!
+  updateUser(publicKey: String!, input: UpdateUserInput!): User! @auth
+  deleteUser(publicKey: String!): Boolean! @auth(requires: ["admin"])
+  createLandToken(input: CreateLandTokenInput!): LandToken!
     @auth(requires: ["admin"])
-  addPriceToLandToken(landTokenId: UUID!, input: CreatePriceInput!): LandToken!
+  updateLandToken(publicKey: String!, input: CreateLandTokenInput!): LandToken!
     @auth(requires: ["admin"])
-  buyToken(privateKey: String!, input: BuyTokenInput!): TransactedToken! @auth
-  createSale(privateKey: String!, input: CreateSaleInput!): Sale! @auth
-  updateSale(privateKey: String!, id: UUID!, input: UpdateSaleInput!): Sale!
-    @auth
-  deleteSale(privateKey: String!, id: ID!): Boolean! @auth
-  addToWatchlist(landTokenId: UUID!): User @auth
-  removeFromWatchlist(landTokenId: UUID!): User @auth
+  addPriceToLandToken(publicKey: String!, input: CreatePriceInput!): LandToken!
+    @auth(requires: ["admin"])
+  buyToken(input: BuyTokenInput!): TransactedToken! @auth
+  createSale(input: CreateSaleInput!): Sale! @auth
+  updateSale(id: ID!, input: UpdateSaleInput!): Sale! @auth
+  deleteSale(id: ID!): Boolean! @auth
+  addToWatchlist(publicKey: String!): User @auth
+  removeFromWatchlist(publicKey: String!): User @auth
 }
-
-directive @auth(requires: [String!] = []) on FIELD_DEFINITION

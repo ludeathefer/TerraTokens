@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/ludeathfer/TerraTokens/backend/middleware"
 	blockchain "github.com/ludeathfer/TerraTokens/backend/pkg/go-eth"
 	"github.com/vektah/gqlparser/v2/ast"
-	"gorm.io/gorm"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -21,7 +21,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 )
 
-func graphqlHandler(database *gorm.DB, blockchainClient *blockchain.BlockchainClient, cfg *config.Config) gin.HandlerFunc {
+func graphqlHandler(database *sql.DB, blockchainClient *blockchain.BlockchainClient, cfg *config.Config) gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
 	c := graph.Config{Resolvers: &graph.Resolver{Database: database, BlockchainClient: blockchainClient, Config: cfg}}
@@ -67,6 +67,11 @@ func main() {
 	database, err := db.NewDB(&cfg.Database)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	// Run migrations
+	if err := db.AutoMigrate(database); err != nil {
+		log.Fatalf("Failed to automigrate models: %v", err)
 	}
 
 	blockchainClient, err := blockchain.NewConn(cfg.Blockchain)

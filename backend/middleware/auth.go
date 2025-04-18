@@ -7,17 +7,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/ludeathfer/TerraTokens/backend/config"
 )
 
 type Claims struct {
-	UserID uuid.UUID `json:"user_id"`
-	Roles  []string  `json:"roles"`
+	PublicKey string   `json:"public_key"`
+	Roles     []string `json:"roles"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(cfg config.JwtConfig, userID uuid.UUID, roles []string) (string, error) {
+func GenerateToken(cfg config.JwtConfig, publicKey string, roles []string) (string, error) {
 	tokenDuration, err := time.ParseDuration(cfg.JWTExpiration)
 	if err != nil {
 		return "", fmt.Errorf("failed parsing jwt expiration: %v", err)
@@ -25,8 +24,8 @@ func GenerateToken(cfg config.JwtConfig, userID uuid.UUID, roles []string) (stri
 
 	expirationTime := time.Now().Add(tokenDuration)
 	claims := &Claims{
-		UserID: userID,
-		Roles:  roles,
+		PublicKey: publicKey,
+		Roles:     roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -75,7 +74,7 @@ func AuthMiddleware(cfg config.JwtConfig) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(string(UserContextKey), claims.UserID)
+		c.Set(string(UserContextKey), claims.PublicKey)
 		c.Set(string(RolesContextKey), claims.Roles)
 
 		c.Next()

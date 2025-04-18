@@ -15,7 +15,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/google/uuid"
 	"github.com/ludeathfer/TerraTokens/backend/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -75,21 +74,22 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddPriceToLandToken func(childComplexity int, landTokenID uuid.UUID, input model.CreatePriceInput) int
-		AddToWatchlist      func(childComplexity int, landTokenID uuid.UUID) int
-		BuyToken            func(childComplexity int, privateKey string, input model.BuyTokenInput) int
-		CreateLandToken     func(childComplexity int, privateKey string, input model.CreateLandTokenInput) int
-		CreateSale          func(childComplexity int, privateKey string, input model.CreateSaleInput) int
+		AddPriceToLandToken func(childComplexity int, publicKey string, input model.CreatePriceInput) int
+		AddToWatchlist      func(childComplexity int, publicKey string) int
+		BuyToken            func(childComplexity int, input model.BuyTokenInput) int
+		CreateLandToken     func(childComplexity int, input model.CreateLandTokenInput) int
+		CreateSale          func(childComplexity int, input model.CreateSaleInput) int
 		CreateUser          func(childComplexity int, input model.CreateUserInput) int
-		DeleteSale          func(childComplexity int, privateKey string, id int) int
-		DeleteUser          func(childComplexity int, id uuid.UUID) int
-		RemoveFromWatchlist func(childComplexity int, landTokenID uuid.UUID) int
-		UpdateLandToken     func(childComplexity int, id uuid.UUID, input model.CreateLandTokenInput) int
-		UpdateSale          func(childComplexity int, privateKey string, id uuid.UUID, input model.UpdateSaleInput) int
-		UpdateUser          func(childComplexity int, id uuid.UUID, input model.UpdateUserInput) int
+		DeleteSale          func(childComplexity int, id int) int
+		DeleteUser          func(childComplexity int, publicKey string) int
+		RemoveFromWatchlist func(childComplexity int, publicKey string) int
+		UpdateLandToken     func(childComplexity int, publicKey string, input model.CreateLandTokenInput) int
+		UpdateSale          func(childComplexity int, id int, input model.UpdateSaleInput) int
+		UpdateUser          func(childComplexity int, publicKey string, input model.UpdateUserInput) int
 	}
 
 	OwnedToken struct {
+		ID        func(childComplexity int) int
 		LandToken func(childComplexity int) int
 		Quantity  func(childComplexity int) int
 	}
@@ -101,12 +101,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		LandToken  func(childComplexity int, id uuid.UUID) int
+		LandToken  func(childComplexity int, publicKey string) int
 		LandTokens func(childComplexity int) int
 		Login      func(childComplexity int, publicKey string) int
 		Sale       func(childComplexity int, id int) int
 		Sales      func(childComplexity int) int
-		User       func(childComplexity int, id uuid.UUID) int
+		User       func(childComplexity int, publicKey string) int
 		Users      func(childComplexity int) int
 	}
 
@@ -153,24 +153,24 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error)
-	UpdateUser(ctx context.Context, id uuid.UUID, input model.UpdateUserInput) (*model.User, error)
-	DeleteUser(ctx context.Context, id uuid.UUID) (bool, error)
-	CreateLandToken(ctx context.Context, privateKey string, input model.CreateLandTokenInput) (*model.LandToken, error)
-	UpdateLandToken(ctx context.Context, id uuid.UUID, input model.CreateLandTokenInput) (*model.LandToken, error)
-	AddPriceToLandToken(ctx context.Context, landTokenID uuid.UUID, input model.CreatePriceInput) (*model.LandToken, error)
-	BuyToken(ctx context.Context, privateKey string, input model.BuyTokenInput) (*model.TransactedToken, error)
-	CreateSale(ctx context.Context, privateKey string, input model.CreateSaleInput) (*model.Sale, error)
-	UpdateSale(ctx context.Context, privateKey string, id uuid.UUID, input model.UpdateSaleInput) (*model.Sale, error)
-	DeleteSale(ctx context.Context, privateKey string, id int) (bool, error)
-	AddToWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error)
-	RemoveFromWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error)
+	UpdateUser(ctx context.Context, publicKey string, input model.UpdateUserInput) (*model.User, error)
+	DeleteUser(ctx context.Context, publicKey string) (bool, error)
+	CreateLandToken(ctx context.Context, input model.CreateLandTokenInput) (*model.LandToken, error)
+	UpdateLandToken(ctx context.Context, publicKey string, input model.CreateLandTokenInput) (*model.LandToken, error)
+	AddPriceToLandToken(ctx context.Context, publicKey string, input model.CreatePriceInput) (*model.LandToken, error)
+	BuyToken(ctx context.Context, input model.BuyTokenInput) (*model.TransactedToken, error)
+	CreateSale(ctx context.Context, input model.CreateSaleInput) (*model.Sale, error)
+	UpdateSale(ctx context.Context, id int, input model.UpdateSaleInput) (*model.Sale, error)
+	DeleteSale(ctx context.Context, id int) (bool, error)
+	AddToWatchlist(ctx context.Context, publicKey string) (*model.User, error)
+	RemoveFromWatchlist(ctx context.Context, publicKey string) (*model.User, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context) ([]*model.User, error)
-	User(ctx context.Context, id uuid.UUID) (*model.User, error)
+	User(ctx context.Context, publicKey string) (*model.User, error)
 	Login(ctx context.Context, publicKey string) (*model.LoginResponse, error)
 	LandTokens(ctx context.Context) ([]*model.LandToken, error)
-	LandToken(ctx context.Context, id uuid.UUID) (*model.LandToken, error)
+	LandToken(ctx context.Context, publicKey string) (*model.LandToken, error)
 	Sales(ctx context.Context) ([]*model.Sale, error)
 	Sale(ctx context.Context, id int) (*model.Sale, error)
 }
@@ -330,7 +330,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddPriceToLandToken(childComplexity, args["landTokenId"].(uuid.UUID), args["input"].(model.CreatePriceInput)), true
+		return e.complexity.Mutation.AddPriceToLandToken(childComplexity, args["publicKey"].(string), args["input"].(model.CreatePriceInput)), true
 
 	case "Mutation.addToWatchlist":
 		if e.complexity.Mutation.AddToWatchlist == nil {
@@ -342,7 +342,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddToWatchlist(childComplexity, args["landTokenId"].(uuid.UUID)), true
+		return e.complexity.Mutation.AddToWatchlist(childComplexity, args["publicKey"].(string)), true
 
 	case "Mutation.buyToken":
 		if e.complexity.Mutation.BuyToken == nil {
@@ -354,7 +354,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.BuyToken(childComplexity, args["privateKey"].(string), args["input"].(model.BuyTokenInput)), true
+		return e.complexity.Mutation.BuyToken(childComplexity, args["input"].(model.BuyTokenInput)), true
 
 	case "Mutation.createLandToken":
 		if e.complexity.Mutation.CreateLandToken == nil {
@@ -366,7 +366,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateLandToken(childComplexity, args["privateKey"].(string), args["input"].(model.CreateLandTokenInput)), true
+		return e.complexity.Mutation.CreateLandToken(childComplexity, args["input"].(model.CreateLandTokenInput)), true
 
 	case "Mutation.createSale":
 		if e.complexity.Mutation.CreateSale == nil {
@@ -378,7 +378,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateSale(childComplexity, args["privateKey"].(string), args["input"].(model.CreateSaleInput)), true
+		return e.complexity.Mutation.CreateSale(childComplexity, args["input"].(model.CreateSaleInput)), true
 
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -402,7 +402,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteSale(childComplexity, args["privateKey"].(string), args["id"].(int)), true
+		return e.complexity.Mutation.DeleteSale(childComplexity, args["id"].(int)), true
 
 	case "Mutation.deleteUser":
 		if e.complexity.Mutation.DeleteUser == nil {
@@ -414,7 +414,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(uuid.UUID)), true
+		return e.complexity.Mutation.DeleteUser(childComplexity, args["publicKey"].(string)), true
 
 	case "Mutation.removeFromWatchlist":
 		if e.complexity.Mutation.RemoveFromWatchlist == nil {
@@ -426,7 +426,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RemoveFromWatchlist(childComplexity, args["landTokenId"].(uuid.UUID)), true
+		return e.complexity.Mutation.RemoveFromWatchlist(childComplexity, args["publicKey"].(string)), true
 
 	case "Mutation.updateLandToken":
 		if e.complexity.Mutation.UpdateLandToken == nil {
@@ -438,7 +438,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateLandToken(childComplexity, args["id"].(uuid.UUID), args["input"].(model.CreateLandTokenInput)), true
+		return e.complexity.Mutation.UpdateLandToken(childComplexity, args["publicKey"].(string), args["input"].(model.CreateLandTokenInput)), true
 
 	case "Mutation.updateSale":
 		if e.complexity.Mutation.UpdateSale == nil {
@@ -450,7 +450,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateSale(childComplexity, args["privateKey"].(string), args["id"].(uuid.UUID), args["input"].(model.UpdateSaleInput)), true
+		return e.complexity.Mutation.UpdateSale(childComplexity, args["id"].(int), args["input"].(model.UpdateSaleInput)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -462,7 +462,14 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(uuid.UUID), args["input"].(model.UpdateUserInput)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["publicKey"].(string), args["input"].(model.UpdateUserInput)), true
+
+	case "OwnedToken.id":
+		if e.complexity.OwnedToken.ID == nil {
+			break
+		}
+
+		return e.complexity.OwnedToken.ID(childComplexity), true
 
 	case "OwnedToken.landToken":
 		if e.complexity.OwnedToken.LandToken == nil {
@@ -509,7 +516,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.LandToken(childComplexity, args["id"].(uuid.UUID)), true
+		return e.complexity.Query.LandToken(childComplexity, args["publicKey"].(string)), true
 
 	case "Query.landTokens":
 		if e.complexity.Query.LandTokens == nil {
@@ -559,7 +566,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.User(childComplexity, args["id"].(uuid.UUID)), true
+		return e.complexity.Query.User(childComplexity, args["publicKey"].(string)), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
@@ -926,11 +933,11 @@ func (ec *executionContext) dir_auth_argsRequires(
 func (ec *executionContext) field_Mutation_addPriceToLandToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_addPriceToLandToken_argsLandTokenID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_addPriceToLandToken_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["landTokenId"] = arg0
+	args["publicKey"] = arg0
 	arg1, err := ec.field_Mutation_addPriceToLandToken_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -938,16 +945,16 @@ func (ec *executionContext) field_Mutation_addPriceToLandToken_args(ctx context.
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_addPriceToLandToken_argsLandTokenID(
+func (ec *executionContext) field_Mutation_addPriceToLandToken_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("landTokenId"))
-	if tmp, ok := rawArgs["landTokenId"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -967,47 +974,19 @@ func (ec *executionContext) field_Mutation_addPriceToLandToken_argsInput(
 func (ec *executionContext) field_Mutation_addToWatchlist_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_addToWatchlist_argsLandTokenID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_addToWatchlist_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["landTokenId"] = arg0
+	args["publicKey"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_addToWatchlist_argsLandTokenID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("landTokenId"))
-	if tmp, ok := rawArgs["landTokenId"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
-	}
-
-	var zeroVal uuid.UUID
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_buyToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_buyToken_argsPrivateKey(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["privateKey"] = arg0
-	arg1, err := ec.field_Mutation_buyToken_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg1
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_buyToken_argsPrivateKey(
+func (ec *executionContext) field_Mutation_addToWatchlist_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("privateKey"))
-	if tmp, ok := rawArgs["privateKey"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
 		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
@@ -1015,6 +994,16 @@ func (ec *executionContext) field_Mutation_buyToken_argsPrivateKey(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_buyToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_buyToken_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
 func (ec *executionContext) field_Mutation_buyToken_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -1031,31 +1020,13 @@ func (ec *executionContext) field_Mutation_buyToken_argsInput(
 func (ec *executionContext) field_Mutation_createLandToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_createLandToken_argsPrivateKey(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_createLandToken_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["privateKey"] = arg0
-	arg1, err := ec.field_Mutation_createLandToken_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_createLandToken_argsPrivateKey(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("privateKey"))
-	if tmp, ok := rawArgs["privateKey"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_createLandToken_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -1072,31 +1043,13 @@ func (ec *executionContext) field_Mutation_createLandToken_argsInput(
 func (ec *executionContext) field_Mutation_createSale_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_createSale_argsPrivateKey(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_createSale_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["privateKey"] = arg0
-	arg1, err := ec.field_Mutation_createSale_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_createSale_argsPrivateKey(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("privateKey"))
-	if tmp, ok := rawArgs["privateKey"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_createSale_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -1136,31 +1089,13 @@ func (ec *executionContext) field_Mutation_createUser_argsInput(
 func (ec *executionContext) field_Mutation_deleteSale_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_deleteSale_argsPrivateKey(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_deleteSale_argsID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["privateKey"] = arg0
-	arg1, err := ec.field_Mutation_deleteSale_argsID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg1
+	args["id"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_deleteSale_argsPrivateKey(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("privateKey"))
-	if tmp, ok := rawArgs["privateKey"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_deleteSale_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -1177,57 +1112,57 @@ func (ec *executionContext) field_Mutation_deleteSale_argsID(
 func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_deleteUser_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_deleteUser_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["publicKey"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_deleteUser_argsID(
+func (ec *executionContext) field_Mutation_deleteUser_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal string
 	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_removeFromWatchlist_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_removeFromWatchlist_argsLandTokenID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_removeFromWatchlist_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["landTokenId"] = arg0
+	args["publicKey"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_removeFromWatchlist_argsLandTokenID(
+func (ec *executionContext) field_Mutation_removeFromWatchlist_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("landTokenId"))
-	if tmp, ok := rawArgs["landTokenId"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal string
 	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateLandToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateLandToken_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_updateLandToken_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["publicKey"] = arg0
 	arg1, err := ec.field_Mutation_updateLandToken_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -1235,16 +1170,16 @@ func (ec *executionContext) field_Mutation_updateLandToken_args(ctx context.Cont
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_updateLandToken_argsID(
+func (ec *executionContext) field_Mutation_updateLandToken_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -1264,46 +1199,28 @@ func (ec *executionContext) field_Mutation_updateLandToken_argsInput(
 func (ec *executionContext) field_Mutation_updateSale_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateSale_argsPrivateKey(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_updateSale_argsID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["privateKey"] = arg0
-	arg1, err := ec.field_Mutation_updateSale_argsID(ctx, rawArgs)
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_updateSale_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg1
-	arg2, err := ec.field_Mutation_updateSale_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg2
+	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_updateSale_argsPrivateKey(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("privateKey"))
-	if tmp, ok := rawArgs["privateKey"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_updateSale_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
+) (int, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		return ec.unmarshalNID2int(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal int
 	return zeroVal, nil
 }
 
@@ -1323,11 +1240,11 @@ func (ec *executionContext) field_Mutation_updateSale_argsInput(
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateUser_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_updateUser_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["publicKey"] = arg0
 	arg1, err := ec.field_Mutation_updateUser_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -1335,16 +1252,16 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_updateUser_argsID(
+func (ec *executionContext) field_Mutation_updateUser_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -1387,23 +1304,23 @@ func (ec *executionContext) field_Query___type_argsName(
 func (ec *executionContext) field_Query_landToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_landToken_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Query_landToken_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["publicKey"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Query_landToken_argsID(
+func (ec *executionContext) field_Query_landToken_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -1456,23 +1373,23 @@ func (ec *executionContext) field_Query_sale_argsID(
 func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_user_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Query_user_argsPublicKey(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["publicKey"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Query_user_argsID(
+func (ec *executionContext) field_Query_user_argsPublicKey(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (uuid.UUID, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
+	if tmp, ok := rawArgs["publicKey"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
-	var zeroVal uuid.UUID
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -2498,7 +2415,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.UpdateUserInput))
+			return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["publicKey"].(string), fc.Args["input"].(model.UpdateUserInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -2606,7 +2523,7 @@ func (ec *executionContext) _Mutation_deleteUser(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteUser(rctx, fc.Args["id"].(uuid.UUID))
+			return ec.resolvers.Mutation().DeleteUser(rctx, fc.Args["publicKey"].(string))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -2688,7 +2605,7 @@ func (ec *executionContext) _Mutation_createLandToken(ctx context.Context, field
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateLandToken(rctx, fc.Args["privateKey"].(string), fc.Args["input"].(model.CreateLandTokenInput))
+			return ec.resolvers.Mutation().CreateLandToken(rctx, fc.Args["input"].(model.CreateLandTokenInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -2804,7 +2721,7 @@ func (ec *executionContext) _Mutation_updateLandToken(ctx context.Context, field
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateLandToken(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.CreateLandTokenInput))
+			return ec.resolvers.Mutation().UpdateLandToken(rctx, fc.Args["publicKey"].(string), fc.Args["input"].(model.CreateLandTokenInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -2920,7 +2837,7 @@ func (ec *executionContext) _Mutation_addPriceToLandToken(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().AddPriceToLandToken(rctx, fc.Args["landTokenId"].(uuid.UUID), fc.Args["input"].(model.CreatePriceInput))
+			return ec.resolvers.Mutation().AddPriceToLandToken(rctx, fc.Args["publicKey"].(string), fc.Args["input"].(model.CreatePriceInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -3036,7 +2953,7 @@ func (ec *executionContext) _Mutation_buyToken(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().BuyToken(rctx, fc.Args["privateKey"].(string), fc.Args["input"].(model.BuyTokenInput))
+			return ec.resolvers.Mutation().BuyToken(rctx, fc.Args["input"].(model.BuyTokenInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -3134,7 +3051,7 @@ func (ec *executionContext) _Mutation_createSale(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateSale(rctx, fc.Args["privateKey"].(string), fc.Args["input"].(model.CreateSaleInput))
+			return ec.resolvers.Mutation().CreateSale(rctx, fc.Args["input"].(model.CreateSaleInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -3230,7 +3147,7 @@ func (ec *executionContext) _Mutation_updateSale(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateSale(rctx, fc.Args["privateKey"].(string), fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.UpdateSaleInput))
+			return ec.resolvers.Mutation().UpdateSale(rctx, fc.Args["id"].(int), fc.Args["input"].(model.UpdateSaleInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -3326,7 +3243,7 @@ func (ec *executionContext) _Mutation_deleteSale(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteSale(rctx, fc.Args["privateKey"].(string), fc.Args["id"].(int))
+			return ec.resolvers.Mutation().DeleteSale(rctx, fc.Args["id"].(int))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -3408,7 +3325,7 @@ func (ec *executionContext) _Mutation_addToWatchlist(ctx context.Context, field 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().AddToWatchlist(rctx, fc.Args["landTokenId"].(uuid.UUID))
+			return ec.resolvers.Mutation().AddToWatchlist(rctx, fc.Args["publicKey"].(string))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -3513,7 +3430,7 @@ func (ec *executionContext) _Mutation_removeFromWatchlist(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().RemoveFromWatchlist(rctx, fc.Args["landTokenId"].(uuid.UUID))
+			return ec.resolvers.Mutation().RemoveFromWatchlist(rctx, fc.Args["publicKey"].(string))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -3599,6 +3516,50 @@ func (ec *executionContext) fieldContext_Mutation_removeFromWatchlist(ctx contex
 	if fc.Args, err = ec.field_Mutation_removeFromWatchlist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OwnedToken_id(ctx context.Context, field graphql.CollectedField, obj *model.OwnedToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OwnedToken_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OwnedToken_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OwnedToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -3969,7 +3930,7 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().User(rctx, fc.Args["id"].(uuid.UUID))
+			return ec.resolvers.Query().User(rctx, fc.Args["publicKey"].(string))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -4240,7 +4201,7 @@ func (ec *executionContext) _Query_landToken(ctx context.Context, field graphql.
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().LandToken(rctx, fc.Args["id"].(uuid.UUID))
+			return ec.resolvers.Query().LandToken(rctx, fc.Args["publicKey"].(string))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -5921,6 +5882,8 @@ func (ec *executionContext) fieldContext_User_ownedTokens(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_OwnedToken_id(ctx, field)
 			case "landToken":
 				return ec.fieldContext_OwnedToken_landToken(ctx, field)
 			case "quantity":
@@ -8249,7 +8212,7 @@ func (ec *executionContext) unmarshalInputCreateSaleInput(ctx context.Context, o
 		switch k {
 		case "landTokenId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("landTokenId"))
-			data, err := ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			data, err := ec.unmarshalNInt2int32(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8701,6 +8664,11 @@ func (ec *executionContext) _OwnedToken(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("OwnedToken")
+		case "id":
+			out.Values[i] = ec._OwnedToken_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "landToken":
 			out.Values[i] = ec._OwnedToken_landToken(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10043,21 +10011,6 @@ func (ec *executionContext) marshalNTransactedToken2ᚖgithubᚗcomᚋludeathfer
 		return graphql.Null
 	}
 	return ec._TransactedToken(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, v any) (uuid.UUID, error) {
-	res, err := graphql.UnmarshalUUID(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, sel ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
-	res := graphql.MarshalUUID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
 }
 
 func (ec *executionContext) unmarshalNUpdateSaleInput2githubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐUpdateSaleInput(ctx context.Context, v any) (model.UpdateSaleInput, error) {

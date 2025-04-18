@@ -4,9 +4,8 @@ package graph
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-
-	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ludeathfer/TerraTokens/backend/config"
@@ -19,7 +18,7 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Database         *gorm.DB
+	Database         *sql.DB
 	BlockchainClient *blockchain.BlockchainClient
 	Config           *config.Config
 }

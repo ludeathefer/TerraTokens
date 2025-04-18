@@ -4,8 +4,6 @@ package model
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type BuyTokenInput struct {
@@ -34,9 +32,9 @@ type CreatePriceInput struct {
 }
 
 type CreateSaleInput struct {
-	LandTokenID uuid.UUID `json:"landTokenId"`
-	Quantity    int32     `json:"quantity"`
-	Price       float64   `json:"price"`
+	LandTokenID int32   `json:"landTokenId"`
+	Quantity    int32   `json:"quantity"`
+	Price       float64 `json:"price"`
 }
 
 type CreateUserInput struct {
@@ -74,6 +72,7 @@ type Mutation struct {
 }
 
 type OwnedToken struct {
+	ID        int        `json:"id"`
 	LandToken *LandToken `json:"landToken"`
 	Quantity  int32      `json:"quantity"`
 }

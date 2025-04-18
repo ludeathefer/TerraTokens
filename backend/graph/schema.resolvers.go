@@ -7,68 +7,292 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/ludeathfer/TerraTokens/backend/graph/model"
+	"github.com/ludeathfer/TerraTokens/backend/middleware"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+	db := r.Database
+
+	// Start a transaction
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+
+	// Ensure rollback on error
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Insert the user
+	query := `
+		INSERT INTO users (public_key, username, phone, email)
+		VALUES (?, ?, ?, ?, ?)
+	`
+	_, err = tx.ExecContext(ctx, query, input.PublicKey, input.Username, input.Phone, input.Email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert user: %w", err)
+	}
+
+	// Fetch the 'user' role
+	role := &model.Role{}
+	query = `SELECT id, name, description FROM roles WHERE name = 'user'`
+	err = tx.QueryRowContext(ctx, query).Scan(&role.ID, &role.Name, &role.Description)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user role: %w", err)
+	}
+
+	// Assign the 'user' role to the new user
+	query = `INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)`
+	_, err = tx.ExecContext(ctx, query, input.PublicKey, role.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assign user role: %w", err)
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Return the created user object
+	user := &model.User{
+		PublicKey: input.PublicKey,
+		Username:  input.Username,
+		Phone:     input.Phone,
+		Email:     input.Email,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Roles:     []*model.Role{role},
+	}
+	return user, nil
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id uuid.UUID, input model.UpdateUserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
+func (r *mutationResolver) UpdateUser(ctx context.Context, publicKey string, input model.UpdateUserInput) (*model.User, error) {
+	db := r.Database
+
+	// Start a transaction
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Update query
+	query := `
+		UPDATE users 
+		SET updated_at = NOW()
+		`
+	args := []any{}
+
+	if input.Username != nil {
+		query += ", username = ?"
+		args = append(args, input.Username)
+	}
+
+	if input.Phone != nil {
+		query += ", phone = ?"
+		args = append(args, input.Phone)
+	}
+
+	if input.Email != nil {
+		query += ", email = ?"
+		args = append(args, input.Email)
+	}
+
+	// Append password update only if provided
+	if input.Password != nil {
+		password := *input.Password
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, fmt.Errorf("failed to hash password: %w", err)
+		}
+
+		query += ", password = ?"
+		args = append(args, hashedPassword)
+	}
+
+	query += " WHERE public_key = ?"
+	args = append(args, publicKey)
+
+	// Execute update
+	result, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("failed to check affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	user := &model.User{
+		Username: *input.Username,
+		Phone:    *input.Phone,
+		Email:    *input.Email,
+	}
+
+	return user, nil
 }
 
 // DeleteUser is the resolver for the deleteUser field.
-func (r *mutationResolver) DeleteUser(ctx context.Context, id uuid.UUID) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
+func (r *mutationResolver) DeleteUser(ctx context.Context, publicKey string) (bool, error) {
+	db := r.Database
+
+	query := `DELETE FROM users WHERE id = ?`
+	result, err := db.ExecContext(ctx, query, publicKey)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("failed to check affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return false, fmt.Errorf("user not found")
+	}
+
+	return true, nil
 }
 
 // CreateLandToken is the resolver for the createLandToken field.
-func (r *mutationResolver) CreateLandToken(ctx context.Context, privateKey string, input model.CreateLandTokenInput) (*model.LandToken, error) {
-	panic(fmt.Errorf("not implemented: CreateLandToken - createLandToken"))
+func (r *mutationResolver) CreateLandToken(ctx context.Context, input model.CreateLandTokenInput) (*model.LandToken, error) {
+	// db := r.Database
+	// bcc := r.BlockchainClient
+
+	// transactor, err := blockchain.CreateTransactor(ctx, bcc.Client, privateKey)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed creating transactor: %v", err)
+	// }
+
+	// tx, err := bcc.Land.FractionalizeLand(transactor, "", big.NewInt(int64(input.TotalTokens)))
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed sending transaction: %v", err)
+	// }
+
+	// log.Printf("FractionalizeLand Transaction sent: %s", tx.Hash().Hex())
+
+	// userAddress := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	// tx, err = bcc.Land.TransferFractionalTokens(transactor, userAddress, big.NewInt(1), big.NewInt(int64(input.TotalTokens)))
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed transferring tokens: %v", err)
+	// }
+
+	// log.Printf("TransferFractionalTokens Transaction sent: %s", tx.Hash().Hex())
+
+	// eventLog, err := blockchain.WaitForEvent(ctx, bcc, tx.Hash().Hex())
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// landIDBigInt := new(big.Int).SetBytes(eventLog.Topics[1].Bytes())
+	// landID := int32(landIDBigInt.Int64())
+
+	// // Generate new UUID
+
+	// // Insert data into DB
+	// query := `
+	// 		INSERT INTO land_tokens (
+	// 			id, land_id, name, total_tokens, current_price,
+	// 			property_type, property_size, property_size_unit, landmark,
+	// 			distance_from_landmark, distance_unit, property_description,
+	// 			latitude, longitude
+	// 		)
+	// 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+	// 	`
+	// _, err = db.ExecContext(ctx, query,
+	// 	landTokenID, landID, input.Name, input.TotalTokens, input.CurrentPrice,
+	// 	input.PropertyType, input.PropertySize, input.PropertySizeUnit, input.Landmark,
+	// 	input.DistanceFromLandmark, input.DistanceUnit, input.PropertyDescription,
+	// 	input.Latitude, input.Longitude,
+	// )
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed inserting into database: %v", err)
+	// }
+
+	// Construct response object
+	landToken := &model.LandToken{
+		// LandID:               landID,
+		Name:                 input.Name,
+		TotalTokens:          input.TotalTokens,
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
+		CurrentPrice:         input.CurrentPrice,
+		PropertyType:         input.PropertyType,
+		PropertySize:         input.PropertySize,
+		PropertySizeUnit:     input.PropertySizeUnit,
+		Landmark:             input.Landmark,
+		DistanceFromLandmark: input.DistanceFromLandmark,
+		DistanceUnit:         input.DistanceUnit,
+		PropertyDescription:  input.PropertyDescription,
+		Latitude:             input.Latitude,
+		Longitude:            input.Longitude,
+	}
+
+	return landToken, nil
 }
 
 // UpdateLandToken is the resolver for the updateLandToken field.
-func (r *mutationResolver) UpdateLandToken(ctx context.Context, id uuid.UUID, input model.CreateLandTokenInput) (*model.LandToken, error) {
+func (r *mutationResolver) UpdateLandToken(ctx context.Context, publicKey string, input model.CreateLandTokenInput) (*model.LandToken, error) {
 	panic(fmt.Errorf("not implemented: UpdateLandToken - updateLandToken"))
 }
 
 // AddPriceToLandToken is the resolver for the addPriceToLandToken field.
-func (r *mutationResolver) AddPriceToLandToken(ctx context.Context, landTokenID uuid.UUID, input model.CreatePriceInput) (*model.LandToken, error) {
+func (r *mutationResolver) AddPriceToLandToken(ctx context.Context, publicKey string, input model.CreatePriceInput) (*model.LandToken, error) {
 	panic(fmt.Errorf("not implemented: AddPriceToLandToken - addPriceToLandToken"))
 }
 
 // BuyToken is the resolver for the buyToken field.
-func (r *mutationResolver) BuyToken(ctx context.Context, privateKey string, input model.BuyTokenInput) (*model.TransactedToken, error) {
+func (r *mutationResolver) BuyToken(ctx context.Context, input model.BuyTokenInput) (*model.TransactedToken, error) {
 	panic(fmt.Errorf("not implemented: BuyToken - buyToken"))
 }
 
 // CreateSale is the resolver for the createSale field.
-func (r *mutationResolver) CreateSale(ctx context.Context, privateKey string, input model.CreateSaleInput) (*model.Sale, error) {
+func (r *mutationResolver) CreateSale(ctx context.Context, input model.CreateSaleInput) (*model.Sale, error) {
 	panic(fmt.Errorf("not implemented: CreateSale - createSale"))
 }
 
 // UpdateSale is the resolver for the updateSale field.
-func (r *mutationResolver) UpdateSale(ctx context.Context, privateKey string, id uuid.UUID, input model.UpdateSaleInput) (*model.Sale, error) {
+func (r *mutationResolver) UpdateSale(ctx context.Context, id int, input model.UpdateSaleInput) (*model.Sale, error) {
 	panic(fmt.Errorf("not implemented: UpdateSale - updateSale"))
 }
 
 // DeleteSale is the resolver for the deleteSale field.
-func (r *mutationResolver) DeleteSale(ctx context.Context, privateKey string, id int) (bool, error) {
+func (r *mutationResolver) DeleteSale(ctx context.Context, id int) (bool, error) {
 	panic(fmt.Errorf("not implemented: DeleteSale - deleteSale"))
 }
 
 // AddToWatchlist is the resolver for the addToWatchlist field.
-func (r *mutationResolver) AddToWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error) {
+func (r *mutationResolver) AddToWatchlist(ctx context.Context, publicKey string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: AddToWatchlist - addToWatchlist"))
 }
 
 // RemoveFromWatchlist is the resolver for the removeFromWatchlist field.
-func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, landTokenID uuid.UUID) (*model.User, error) {
+func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, publicKey string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: RemoveFromWatchlist - removeFromWatchlist"))
 }
 
@@ -78,13 +302,57 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 }
 
 // User is the resolver for the user field.
-func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, error) {
+func (r *queryResolver) User(ctx context.Context, publicKey string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: User - user"))
 }
 
 // Login is the resolver for the login field.
 func (r *queryResolver) Login(ctx context.Context, publicKey string) (*model.LoginResponse, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
+	db := r.Database
+
+	query := `
+		SELECT
+			u.public_key, u.username, u.phone, u.email, u.created_at, u.updated_at,
+			r.id, r.name, r.description
+		FROM users u
+		LEFT JOIN user_roles ur ON u.id = ur.user_id
+		LEFT JOIN roles r ON ur.role_id = r.id
+		WHERE u.public_key = ?
+	`
+	rows, err := db.QueryContext(ctx, query, publicKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials: %w", err)
+	}
+	defer rows.Close()
+
+	var user *model.User
+	roleNames := []string{}
+	for rows.Next() {
+		user = &model.User{}
+		role := &model.Role{}
+		err := rows.Scan(&user.PublicKey, &user.Username, &user.Email, &user.Phone, &user.CreatedAt, &user.UpdatedAt, &role.ID, &role.Name, &role.Description)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+		user.Roles = append(user.Roles, role)
+		roleNames = append(roleNames, role.Name)
+	}
+
+	if user == nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	token, err := middleware.GenerateToken(r.Config.JWT, user.PublicKey, roleNames)
+	if err != nil {
+		return nil, err
+	}
+
+	loginResponse := &model.LoginResponse{
+		Token: token,
+		User:  user,
+	}
+
+	return loginResponse, nil
 }
 
 // LandTokens is the resolver for the landTokens field.
@@ -93,7 +361,7 @@ func (r *queryResolver) LandTokens(ctx context.Context) ([]*model.LandToken, err
 }
 
 // LandToken is the resolver for the landToken field.
-func (r *queryResolver) LandToken(ctx context.Context, id uuid.UUID) (*model.LandToken, error) {
+func (r *queryResolver) LandToken(ctx context.Context, publicKey string) (*model.LandToken, error) {
 	panic(fmt.Errorf("not implemented: LandToken - landToken"))
 }
 

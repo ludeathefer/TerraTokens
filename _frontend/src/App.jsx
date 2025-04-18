@@ -18,7 +18,6 @@ const USER_LOGIN = gql`
     login(publicKey: $publicKey) {
       token
       User {
-        id
         publicKey
         username
         phone
@@ -62,6 +61,18 @@ export default function App() {
     console.log(userLoginDetails.data);
   }
 
+  const createLandToken = () => {
+    const handleCreateLandToken = async () => {};
+    return (
+      <button
+        onClick={handleCreateLandToken}
+        className="bg-blue-300 px-4 py-2 rounded-md"
+      >
+        Create Land Token
+      </button>
+    );
+  };
+
   const login = () => {
     const handleLogin = async () => {
       const { signer } = await connectWallet();
@@ -81,6 +92,9 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen flex justify-center items-center">{login()}</div>
+    <div className="h-screen flex gap-4 justify-center items-center">
+      {login()}
+      {createLandToken()}
+    </div>
   );
 }
