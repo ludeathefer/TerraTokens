@@ -18,6 +18,7 @@ import {
   tokens,
   TableToken,
   TokenQueryData,
+  LatLang,
 } from "../components/common/tokensData";
 import { SalesQueryData } from "../types/salesType";
 import Graphs from "../components/common/Graphs";
@@ -38,11 +39,16 @@ import { ethers } from "ethers";
 import Landing from "./Landing";
 import { LandToken, LandTokensData } from "../types/types";
 
+type ExtendedToken = LandToken & {
+  chartData: { day: string; value: number }[];
+  latLang: LatLang;
+};
+
 const contractAddress = `0x5FbDB2315678afecb367f032d93F642f64180aa3`;
 
 const TOKEN_DETAILS = gql`
-  query LandToken {
-    landToken(landId: 1) {
+  query LandToken($landId: Int!) {
+    landToken(landId: $landId) {
       name
       propertyType
       updatedAt
@@ -132,6 +138,37 @@ const WatchListCard = ({
   );
 };
 
+function generateRandomLatLang() {
+  // Latitude range for Kathmandu (approximately)
+  const latMin = 27.5;
+  const latMax = 27.8;
+  // Longitude range for Kathmandu (approximately)
+  const lngMin = 85.2;
+  const lngMax = 85.4;
+
+  const latitude = (Math.random() * (latMax - latMin) + latMin).toFixed(2); // Random latitude
+  const longitude = (Math.random() * (lngMax - lngMin) + lngMin).toFixed(2); // Random longitude
+
+  return { latitude, longitude };
+}
+
+function generateDailyPrices(basePrice: number): number[] {
+  const prices = [];
+  for (let i = 0; i < 29; i++) {
+    const fluctuation = basePrice * (1 + (Math.random() * 0.2 - 0.1));
+    prices.push(parseFloat(fluctuation.toFixed(2)));
+  }
+  prices.push(basePrice);
+  return prices;
+}
+
+function generateChartData(
+  basePrice: number
+): { day: string; value: number }[] {
+  const prices = generateDailyPrices(basePrice);
+  return prices.map((value, i) => ({ day: `Day ${i + 1}`, value }));
+}
+
 const LandDetail = () => {
   const { tokenId } = useParams(); // Get the tokenID from the URL
   const regex = /^([A-Za-z]+)-(\d+)$/;
@@ -160,6 +197,13 @@ const LandDetail = () => {
 
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
+
+  if (isBuyDialogOpen) {
+    console.log(
+      selectedTokenForAction?.price,
+      selectedTokenForAction.seller?.publicKey
+    );
+  }
 
   interface LandTokensQueryResponse {
     landTokens: LandToken[];
@@ -197,12 +241,42 @@ const LandDetail = () => {
   };
 
   const { loading, error, data } = useQuery<TokenQueryData>(TOKEN_DETAILS, {
+    variables: { landId }, // Pass landId as a variable
     context: {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
     },
   });
+
+  // const useDummy = true;
+
+  const dummyLandToken: ExtendedToken = {
+    name: tokenId,
+    landId: parseInt(landId),
+    propertyType: data?.landToken.propertyType,
+    // updatedAt: new Date().toISOString(),
+    totalTokens: data?.landToken.totalTokens,
+    // propertySize: data.landToken.propertySize,
+    // propertySizeUnit: data.landToken.propertySizeUnit,
+    currentPrice: data?.landToken.currentPrice,
+    landmark: data?.landToken.landmark,
+    distanceFromLandmark: data?.landToken.distanceFromLandmark,
+    // distanceUnit: data.landToken.distanceUnit,
+    // propertyDescription: data.landToken.propertyDescription,
+    chartData: generateChartData(data?.landToken.currentPrice),
+    latLang: generateRandomLatLang(),
+  };
+
+  // const displayData: { landToken: ExtendedToken } = useDummy
+  //   ? { landToken: dummyLandToken }
+  //   : {
+  //       landToken: {
+  //         ...data.landToken,
+  //         chartData: generateChartData(data.landToken.currentPrice),
+  //       },
+  //     };
+  const displayData = { landToken: dummyLandToken };
 
   const {
     loading: salesLoading,
@@ -222,7 +296,7 @@ const LandDetail = () => {
     data: similarTokens,
   } = useQuery<LandTokensQueryResponse>(LAND_TOKENS);
 
-  console.log(similarTokens.landTokens[0]);
+  console.log(similarTokens?.landTokens[0]);
   if (loading) {
     return <div>Loading...</div>; // Handle the case where the token is not found
   }
@@ -288,9 +362,13 @@ const LandDetail = () => {
 
     if (action === "Buy") {
       setSelectedTokenForAction(token);
+      setNumTokensToBuy(token.quantity); // Set initial quantity to the available amount
+      setPricePerToken(token.price); // Set initial price to the listed price
       setIsBuyDialogOpen(true);
     } else if (action === "Edit") {
       setSelectedTokenForAction(token);
+      setNumTokensToEdit(token.quantity); // Set initial quantity
+      setPricePerToken(token.price); // Set initial price
       setIsEditDialogOpen(true);
     }
   };
@@ -369,7 +447,7 @@ const LandDetail = () => {
                   {/* Graph */}
                   <div className="flex flex-row w-full h-60 bg-white">
                     <Graphs
-                      chartData={data.landToken.chartData}
+                      chartData={displayData.landToken.chartData}
                       chartConfig={{
                         Commercial: {
                           label: "Commercial Token Value",
@@ -468,7 +546,10 @@ const LandDetail = () => {
                       <MapComponent
                         city={""}
                         height={384}
-                        // latLang={[data.landToken.latitude, data .longitude]}
+                        latLang={[
+                          displayData.landToken.latLang.latitude,
+                          displayData.landToken.latLang.longitude,
+                        ]}
                       />
                     </div>
                   </div>
@@ -481,83 +562,13 @@ const LandDetail = () => {
                       <h1 className="font-medium text-black text-md">
                         Tokens For Sale
                       </h1>
-                      {/* Add tokens to sale dialog
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="h-9 w-9 border border-black border-opacity-10 bg-white text-black"
-                          // onClick={() => handleAddTokenForSale(token)}
-                        >
-                          <Plus />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="text-black">
-                        <DialogHeader>
-                          <DialogTitle className="text-black">
-                            Select a Token to Add
-                          </DialogTitle>
-                        </DialogHeader>
-                        <ScrollArea className="h-64 bg-white border border-gray-200 ">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="text-xs font-medium">
-                                  Token Code
-                                </TableHead>
-                                <TableHead className="text-xs font-medium">
-                                  Location
-                                </TableHead>
-                                <TableHead className="text-xs font-medium">
-                                  Type
-                                </TableHead>
-                                <TableHead className="text-xs font-medium">
-                                  Actions
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody className="text-black">
-                              {tokens.map((token) => (
-                                <TableRow key={token.tokenCode}>
-                                  <TableCell className="text-black text-sm font-normal">
-                                    {token.tokenCode}
-                                  </TableCell>
-                                  <TableCell className="text-black text-sm font-normal">
-                                    {token.propertyLocation}
-                                  </TableCell>
-                                  <TableCell className="text-black text-sm font-normal">
-                                    {token.propertyType}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="outline"
-                                      className="text-black bg-white border "
-                                      onClick={() => {
-                                        // Open a nested dialog or modal for input fields
-                                        setIsTokenSelected(true);
-                                        setSelectedToken(token);
-                                      }}
-                                    >
-                                      Select
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog> */}
                       {/* After pressing select, specify no of tokens dialog */}
                       <Dialog
                         open={isDialogOpen}
                         onOpenChange={setIsDialogOpen}
                       >
                         <DialogTrigger asChild>
-                          <Button
-                            className="h-9 w-9 border bg-white text-black hover:bg-gray-50 border-black border-opacity-10"
-                            // onClick={() => handleAddTokenForSale(token)}
-                          >
+                          <Button className="h-9 w-9 border bg-white text-black hover:bg-gray-50 border-black border-opacity-10">
                             <Plus />
                           </Button>
                         </DialogTrigger>
@@ -630,8 +641,8 @@ const LandDetail = () => {
                                 handleBuyTokens(
                                   Number(landId),
                                   numTokensToBuy,
-                                  100,
-                                  "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+                                  selectedTokenForAction?.price,
+                                  selectedTokenForAction?.seller?.publicKey
                                 )
                               }
                             >
@@ -654,7 +665,7 @@ const LandDetail = () => {
                               <Label>Number of Tokens to List</Label>
                               <Input
                                 type="number"
-                                placeholder={numTokensToEdit.toString()}
+                                // placeholder={numTokensToEdit.toString()}
                                 value={numTokensToEdit}
                                 onChange={(e) =>
                                   setNumTokensToEdit(Number(e.target.value))
@@ -753,7 +764,7 @@ const LandDetail = () => {
                           <div className="flex flex-col">
                             <div
                               key={similarToken.landId}
-                              className="mb-2 flex flex-row gap-20 cursor-pointer hover:bg-gray-50 p-2 "
+                              className="mb-2 flex flex-row justify-between cursor-pointer hover:bg-gray-50 p-2 "
                               onClick={() =>
                                 navigate(
                                   `/land-detail/${similarToken.name}-${similarToken.landId}`

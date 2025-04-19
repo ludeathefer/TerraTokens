@@ -319,62 +319,69 @@ const App = () => {
     // console.log(requiredData);
 
     try {
-      // const contract = new ethers.Contract(
-      //   contractAddress,
-      //   contractABI,
-      //   signer
-      // );
-
-      // const tx = await contract.fractionalizeLand(landName, 100, "");
-      // const receipt = await tx.wait();
-      // console.log("Transaction confirmed:", receipt);
-      const contract = new ethers.Contract(
+      const fractionalize_contract = new ethers.Contract(
         contractAddress,
         contractABI,
         signer
       );
 
-      try {
-        const approvalTx = await contract.setApprovalForAll(
-          contractAddress,
-          true
-        );
-        const approvalReceipt = await approvalTx.wait();
-        console.log("Approval confirmed:", approvalReceipt);
-      } catch (approvalError) {
-        console.error("Error during approval:", approvalError);
-        return;
-      }
+      const fractionalize_tx = await fractionalize_contract.fractionalizeLand(
+        landName,
+        100,
+        ""
+      );
+      const fractionalize_receipt = await fractionalize_tx.wait();
+      console.log("Transaction confirmed:", fractionalize_receipt);
 
-      const tx = await contract.listTokensForSale(2, 100, 7500);
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed:", receipt);
+      createLandToken({
+        variables: {
+          input: {
+            name: landName,
+            currentPrice: currentPrice / 100,
+            propertyType,
+            propertySize,
+            propertySizeUnit,
+            landmark,
+            distanceFromLandmark,
+            distanceUnit,
+            propertyDescription,
+            latitude,
+            longitude,
+          },
+        },
+        context: {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      });
 
-      // createLandToken({
-      //   variables: {
-      //     input: {
-      //       name: landName,
-      //       currentPrice: currentPrice / 100,
-      //       propertyType,
-      //       propertySize,
-      //       propertySizeUnit,
-      //       landmark,
-      //       distanceFromLandmark,
-      //       distanceUnit,
-      //       propertyDescription,
-      //       latitude,
-      //       longitude,
-      //     },
-      //   },
-      //   context: {
-      //     headers: {
-      //       Authorization: `Bearer ${authToken}`,
-      //     },
-      //   },
-      // });
+      await listTokensForSale(name);
     } catch (error) {
       console.error("Error during fractionalization:", error);
     }
+  }
+
+  async function listTokensForSale(name) {
+    const requiredData = data.find((item) => item.name === name);
+
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    const price = requiredData.currentPrice / 100;
+    try {
+      const approvalTx = await contract.setApprovalForAll(
+        contractAddress,
+        true
+      );
+      const approvalReceipt = await approvalTx.wait();
+      console.log("Approval confirmed:", approvalReceipt);
+    } catch (approvalError) {
+      console.error("Error during approval:", approvalError);
+      return;
+    }
+
+    const tx = await contract.listTokensForSale(2, 100, Number(price));
+    const receipt = await tx.wait();
+    console.log("Transaction confirmed:", receipt);
   }
 
   return (

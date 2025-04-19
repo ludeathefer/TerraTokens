@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\Lenovo\\Documents\\React Projects\\TerraTokens\\smart-contract\\contracts\\Land.sol": {
-      "lastModificationDate": 1745078623228,
-      "contentHash": "d2fa677ec9a4f69a071c13e2bdf9f5b6",
+      "lastModificationDate": 1745085640520,
+      "contentHash": "71040c36b61249628a39dd1ddb72b08a",
       "sourceName": "contracts/Land.sol",
       "solcConfig": {
         "version": "0.8.28",

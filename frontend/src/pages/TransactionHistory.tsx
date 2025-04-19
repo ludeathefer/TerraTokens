@@ -25,38 +25,75 @@ import {
 } from "../components/ui/dialog";
 import FilterDialog from "../components/dialogs/FilterDialog";
 import { useNavigate } from "react-router-dom";
+import { gql, useQuery } from "@apollo/client";
+import {
+  TransactedToken,
+  TransactedTokensData,
+} from "../types/transactedTypes";
+import { useStore } from "../hooks/use-store";
+
+export const GET_TRANSACTED_TOKENS = gql`
+  query GetTransactedTokens {
+    transactedTokens {
+      id
+      quantity
+      price
+      createdAt
+      landToken {
+        landId
+        name
+        totalTokens
+        currentPrice
+        propertyType
+        propertySize
+        propertySizeUnit
+        landmark
+        distanceFromLandmark
+        distanceUnit
+        propertyDescription
+        latitude
+        longitude
+        prices {
+          date
+          value
+        }
+      }
+      from {
+        publicKey
+        username
+      }
+      to {
+        publicKey
+        username
+      }
+    }
+  }
+`;
+
+const generateRandomProfitLoss = () => {
+  return Number((Math.random() * 2000 - 1000).toFixed(2)); // Random profit/loss between -1000 and 1000
+};
 
 const TransactionHistory = () => {
+  const authToken = useStore().jwt;
+  const myPublicKey = useStore().userPublicKey;
   const [filters, setFilters] = useState({});
-  const [filteredTransactions, setFilteredTransactions] =
-    useState(transactions);
+
   const navigate = useNavigate();
   // const openFilterDialog = () => {
   //   console.log("Hello");
   // };
 
-  const handleApplyFilters = (appliedFilters) => {
-    setFilters(appliedFilters);
-    const filtered = transactions.filter((transaction) => {
-      const matchesTransactionType = appliedFilters.transactionType
-        ? transaction.transactionType === appliedFilters.transactionType
-        : true;
-      const matchesPriceRange =
-        (!appliedFilters.minPrice ||
-          transaction.tokenPrice >= appliedFilters.minPrice) &&
-        (!appliedFilters.maxPrice ||
-          transaction.tokenPrice <= appliedFilters.maxPrice);
-      const matchesProfitLoss = appliedFilters.profitLoss
-        ? (appliedFilters.profitLoss === "profit" &&
-            transaction.profitLoss > 0) ||
-          (appliedFilters.profitLoss === "loss" && transaction.profitLoss <= 0)
-        : true;
+  const { data, loading, error } = useQuery<TransactedTokensData>(
+    GET_TRANSACTED_TOKENS
+  );
+  console.log(data?.transactedTokens?.[0]?.landToken.prices);
 
-      return matchesTransactionType && matchesPriceRange && matchesProfitLoss;
-    });
-
-    setFilteredTransactions(filtered);
-  };
+  const filteredTransactions = data?.transactedTokens.filter(
+    (transaction: TransactedToken) =>
+      transaction.from.publicKey === myPublicKey ||
+      transaction.to.publicKey === myPublicKey
+  );
 
   return (
     <div className="bg-[#FAFAFA] w-full h-screen p-6">
@@ -96,7 +133,7 @@ const TransactionHistory = () => {
                   Filter
                 </Button>
               </DialogTrigger>
-              <FilterDialog onApplyFilters={handleApplyFilters} />
+              {/* <FilterDialog onApplyFilters={handleApplyFilters} /> */}
             </Dialog>
             <DatePickerWithRange className="text-black" />
           </div>
@@ -121,46 +158,49 @@ const TransactionHistory = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions.map((transaction, index) => (
-                  <React.Fragment key={index}>
-                    <TableRow
-                      onClick={() =>
-                        navigate(`/land-detail/${transaction.tokenCode}`)
-                      }
-                    >
-                      <TableCell>
-                        <LandInfo
-                          tokenCode={transaction.tokenCode}
-                          propertyLocation={transaction.propertyLocation}
-                          propertyType={transaction.propertyType}
-                        />
-                      </TableCell>
-                      <TableCell className="text-black text-sm font-normal">
-                        {transaction.transactionDate}
-                      </TableCell>
-                      <TableCell className="text-black text-sm font-normal">
-                        {transaction.transactionType}
-                      </TableCell>
-                      <TableCell className="text-black text-sm font-bold">
-                        {transaction.amount}
-                      </TableCell>
-                      <TableCell className="text-[#0c8ce9] text-sm font-semibold">
-                        Rs {transaction.tokenPrice}
-                      </TableCell>
-                      <TableCell
-                        className={`text-sm font-semibold ${
-                          transaction.profitLoss > 0
-                            ? "text-[#179413]"
-                            : "text-red-500"
-                        }`}
+                {filteredTransactions?.map((transaction, index) => {
+                  const profitLoss = generateRandomProfitLoss();
+                  return (
+                    <React.Fragment key={index}>
+                      <TableRow
+                        onClick={() =>
+                          navigate(
+                            `/land-detail/${transaction?.landToken?.name}-${transaction?.landToken?.landId}`
+                          )
+                        }
                       >
-                        {transaction.profitLoss > 0
-                          ? `+${transaction.profitLoss}`
-                          : transaction.profitLoss}
-                      </TableCell>
-                    </TableRow>
-                  </React.Fragment>
-                ))}
+                        <TableCell>
+                          <LandInfo
+                            tokenCode={`${transaction?.landToken?.name}-${transaction?.landToken?.landId}`}
+                            propertyLocation={`${transaction?.landToken?.distanceFromLandmark} from ${transaction?.landToken?.landmark}`}
+                            propertyType={transaction?.landToken?.propertyType}
+                          />
+                        </TableCell>
+                        <TableCell className="text-black text-sm font-normal">
+                          {transaction?.createdAt}
+                        </TableCell>
+                        <TableCell className="text-black text-sm font-normal">
+                          {transaction?.from?.publicKey === myPublicKey
+                            ? "Sold"
+                            : "Bought"}
+                        </TableCell>
+                        <TableCell className="text-black text-sm font-bold">
+                          {transaction?.quantity}
+                        </TableCell>
+                        <TableCell className="text-[#0c8ce9] text-sm font-semibold">
+                          Rs {transaction?.price}
+                        </TableCell>
+                        <TableCell
+                          className={`text-sm font-semibold ${
+                            profitLoss > 0 ? "text-[#179413]" : "text-red-500"
+                          }`}
+                        >
+                          {profitLoss > 0 ? `+${profitLoss}` : profitLoss}
+                        </TableCell>
+                      </TableRow>
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           </ScrollArea>

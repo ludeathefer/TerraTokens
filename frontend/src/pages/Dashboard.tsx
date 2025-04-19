@@ -12,7 +12,7 @@ import { Separator } from "../components/ui/separator";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Label } from "../components/ui/label";
 import LandInfo from "../components/common/LandInfo";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { tokens, TableToken } from "../components/common/tokensData";
 import WatchlistDialog from "../components/dialogs/WatchlistDialog";
 import Graphs from "../components/common/Graphs";
@@ -26,6 +26,9 @@ import {
 import FilterDialog from "../components/dialogs/FilterDialog";
 import transactions from "../components/common/transactions";
 import { useNavigate } from "react-router-dom";
+import { gql, useQuery } from "@apollo/client";
+import { OwnedTokens } from "../types/ownedTokensTypes";
+import { useStore } from "../hooks/use-store";
 
 interface WatchListCardProps {
   tokenCode: string;
@@ -42,6 +45,34 @@ interface WatchListCardProps {
   profitAmount: number;
   propertyType: "commercial" | "residential" | "agricultural" | "recreational";
 }
+
+const FETCH_OWNED_TOKENS = gql`
+  query FetchOwnedTokens {
+    ownedTokens {
+      userPublicKey
+      landToken {
+        landId
+        name
+        totalTokens
+        currentPrice
+        propertyType
+        propertySize
+        propertySizeUnit
+        landmark
+        distanceFromLandmark
+        distanceUnit
+        propertyDescription
+        latitude
+        longitude
+        createdAt
+        updatedAt
+      }
+      boughtPrice
+      quantity
+      createdAt
+    }
+  }
+`;
 
 // const WatchListCard = ({
 //   tokenCode,
@@ -73,7 +104,8 @@ const Dashboard = () => {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
   const [filters, setFilters] = useState({});
-  const [filteredTokens, setFilteredTokens] = useState<TableToken[]>(tokens);
+  const [filteredTokens, setFilteredTokens] = useState<OwnedTokens>();
+  const authToken = useStore().jwt;
 
   const toggleTokenSelection = (tokenCode: string) => {
     setSelectedTokens((prevSelected) =>
@@ -82,24 +114,54 @@ const Dashboard = () => {
         : [...prevSelected, tokenCode]
     );
   };
-  const handleApplyFilters = (appliedFilters) => {
-    setFilters(appliedFilters);
-    const filtered = tokens.filter((token) => {
-      const matchesPriceRange =
-        (!appliedFilters.minPrice ||
-          token.tokenPrice >= appliedFilters.minPrice) &&
-        (!appliedFilters.maxPrice ||
-          token.tokenPrice <= appliedFilters.maxPrice);
-      const matchesProfitLoss = appliedFilters.profitLoss
-        ? (appliedFilters.profitLoss === "profit" && token.profitLoss > 0) ||
-          (appliedFilters.profitLoss === "loss" && token.profitLoss <= 0)
-        : true;
 
-      return matchesPriceRange && matchesProfitLoss;
+  const { loading, error, data } = useQuery<OwnedTokens>(FETCH_OWNED_TOKENS, {
+    context: {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    },
+  });
+
+  useEffect(() => {
+    const sortedTokens = data?.ownedTokens?.sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateB.getTime() - dateA.getTime(); // Descending order
     });
+    setFilteredTokens({ ownedTokens: sortedTokens });
+    console.log(filteredTokens);
+  }, [loading, error, data]);
 
-    setFilteredTokens(filtered);
-  };
+  const totalTokens =
+    filteredTokens?.ownedTokens?.reduce((total, token) => {
+      return total + token.quantity; // Summing up the quantity of all owned tokens
+    }, 0) ?? 0;
+
+  const totalPortfolioValue =
+    filteredTokens?.ownedTokens?.reduce((total, token) => {
+      return total + token.quantity * token.boughtPrice; // Calculating total value: quantity * boughtPrice
+    }, 0) ?? 0;
+
+  // const handleApplyFilters = (appliedFilters) => {
+  //   setFilters(appliedFilters);
+  //   const filtered = tokens.filter((token) => {
+  //     const matchesPriceRange =
+  //       (!appliedFilters.minPrice ||
+  //         token.tokenPrice >= appliedFilters.minPrice) &&
+  //       (!appliedFilters.maxPrice ||
+  //         token.tokenPrice <= appliedFilters.maxPrice);
+  //     const matchesProfitLoss = appliedFilters.profitLoss
+  //       ? (appliedFilters.profitLoss === "profit" && token.profitLoss > 0) ||
+  //         (appliedFilters.profitLoss === "loss" && token.profitLoss <= 0)
+  //       : true;
+
+  //     return matchesPriceRange && matchesProfitLoss;
+  //   });
+
+  //   setFilteredTokens(filtered);
+  // };
+
   const addToWatchlist = () => {
     const selected = tokens.filter((token) =>
       selectedTokens.includes(token.tokenCode)
@@ -187,17 +249,17 @@ const Dashboard = () => {
                     Portfolio Value
                   </Label>
                   <h1 className="text-2xl font-semibold text-black">
-                    Rs. 1,80,000
+                    {totalPortfolioValue}
                   </h1>
                   <div className="flex flex-row items-center gap-1">
                     <Label className="text-xs font-semibold text-[#7d7d7d]">
                       Profit Amount:
                     </Label>
                     <Label className="text-sm font-semibold text-[#0c8ce9]">
-                      Rs. 50,000
+                      Rs. 20,000
                     </Label>
                     <Label className="text-xs font-semibold text-[#179413]">
-                      +50%
+                      +36%
                     </Label>
                   </div>
                 </div>
@@ -208,7 +270,9 @@ const Dashboard = () => {
                     <Label className="font-semibold text-[#7d7d7d] text-xs">
                       Total Tokens
                     </Label>
-                    <h1 className="text-3xl font-semibold text-black">1200</h1>
+                    <h1 className="text-3xl font-semibold text-black">
+                      {totalTokens}
+                    </h1>
                   </div>
                   {/* For some reason, separator lai div maa rakhesi matra dekhiyo */}
                   <div>
@@ -222,16 +286,18 @@ const Dashboard = () => {
                       Best Profit Land
                     </Label>
                     <LandInfo
-                      tokenCode="KTM-1154W5"
-                      propertyLocation="Kathmandu Ward 1"
-                      propertyType="agricultural"
+                      tokenCode={`${filteredTokens?.ownedTokens?.[0]?.landToken.name}-${filteredTokens?.ownedTokens?.[0]?.landToken.landId}`}
+                      propertyLocation={`${filteredTokens?.ownedTokens?.[0]?.landToken.distanceFromLandmark} from ${filteredTokens?.ownedTokens?.[0]?.landToken.landmark}`}
+                      propertyType={
+                        filteredTokens?.ownedTokens?.[0]?.landToken.propertyType
+                      }
                     />
                   </div>
                 </div>
               </div>
               {/* Graph ko part: */}
               <div className="w-full h-44 bg-white p-4 ">
-                <Graphs
+                {/* <Graphs
                   chartData={chartData}
                   chartConfig={{
                     Commercial: {
@@ -251,7 +317,8 @@ const Dashboard = () => {
                       color: "#9C27B0", // Purple color for recreational tokens
                     },
                   }}
-                />
+                /> */}
+                No Data Available
               </div>
             </div>
             {/* Watchlist */}
@@ -367,7 +434,8 @@ const Dashboard = () => {
                     </Button>
                   </DialogTrigger>
                   <FilterDialog
-                    onApplyFilters={handleApplyFilters}
+                    onApplyFilters={() => {}}
+                    // onApplyFilters={handleApplyFilters}
                     showOwnedFilter
                   />
                 </Dialog>
@@ -376,7 +444,7 @@ const Dashboard = () => {
                   className="h-10 bg-none border-black border-opacity-15 text-black bg-white"
                   onClick={() => {
                     setFilters({});
-                    setFilteredTokens(tokens); // Reset to show all tokens
+                    // setFilteredTokens(tokens); // Reset to show all tokens
                   }}
                 >
                   Reset Filters
@@ -403,43 +471,49 @@ const Dashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTokens.map((token) => (
-                    <TableRow
-                      key={token.tokenCode}
-                      className="my-2"
-                      onClick={() =>
-                        navigate(`/land-detail/${token.tokenCode}`)
-                      }
-                    >
-                      <TableCell>
-                        <LandInfo
-                          tokenCode={token.tokenCode}
-                          propertyLocation={token.propertyLocation}
-                          propertyType={token.propertyType}
-                        />
-                      </TableCell>
-                      <TableCell className="font-normal text-black">
-                        {token.boughtDate}
-                      </TableCell>
-                      <TableCell className="font-normal text-black">
-                        {token.amount}
-                      </TableCell>
-                      <TableCell
-                        className={`${
-                          token.profitLoss > 0
-                            ? "text-[#179413] font-bold"
-                            : "text-red-500 font-bold"
-                        }`}
+                  {filteredTokens?.ownedTokens?.map((token) => {
+                    const profitLoss = Number(
+                      (Math.random() * 2000 - 1000).toFixed(2)
+                    );
+
+                    return (
+                      <TableRow
+                        key={token.landToken.landId}
+                        className="my-2"
+                        onClick={() =>
+                          navigate(
+                            `/land-detail/${token.landToken.name}-${token.landToken.landId}`
+                          )
+                        }
                       >
-                        {token.profitLoss > 0
-                          ? `+${token.profitLoss}`
-                          : token.profitLoss}
-                      </TableCell>
-                      <TableCell className="font-semibold text-black text-right">
-                        Rs {token.tokenPrice}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell>
+                          <LandInfo
+                            tokenCode={`${token.landToken.name}-${token.landToken.landId}`}
+                            propertyLocation={`${token.landToken.distanceFromLandmark} from ${token.landToken.landmark}`}
+                            propertyType={token.landToken.propertyType}
+                          />
+                        </TableCell>
+                        <TableCell className="font-normal text-black">
+                          {token.createdAt}
+                        </TableCell>
+                        <TableCell className="font-normal text-black">
+                          {token.quantity}
+                        </TableCell>
+                        <TableCell
+                          className={`${
+                            profitLoss > 0
+                              ? "text-[#179413] font-bold"
+                              : "text-red-500 font-bold"
+                          }`}
+                        >
+                          {profitLoss > 0 ? `+${profitLoss}` : profitLoss}
+                        </TableCell>
+                        <TableCell className="font-semibold text-black text-right">
+                          Rs {token.boughtPrice}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </ScrollArea>

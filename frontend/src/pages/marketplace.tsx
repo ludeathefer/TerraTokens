@@ -22,6 +22,8 @@ const LAND_TOKENS = gql`
       distanceFromLandmark
       totalTokens
       currentPrice
+      propertySize
+      propertyDescription
     }
   }
 `;
@@ -35,7 +37,7 @@ const MarketPlace = () => {
   const [landTokens, setLandTokens] = useState<LandToken[]>([]);
 
   const [popularTokens, setPopularTokens] = useState<TableToken[]>([]);
-  const [searchResult, setSearchResult] = useState<TableToken[]>([]);
+  const [searchResult, setSearchResult] = useState<LandToken[]>([]);
   const [location, setLocation] = useState("");
   const [propertySize, setPropertySize] = useState<number | string>("");
   const [maxPrice, setMaxPrice] = useState<number | string>("");
@@ -82,15 +84,19 @@ const MarketPlace = () => {
     const maxPriceNum =
       typeof maxPrice === "string" ? parseFloat(maxPrice) : maxPrice;
 
-    const filteredTokens = tokens.filter((token) => {
+    const filteredTokens = landTokens.filter((token) => {
       const matchesLocation = location
-        ? token.propertyLocation.toLowerCase().includes(location.toLowerCase())
+        ? token.landmark.toLowerCase().includes(location.toLowerCase()) ||
+          token.propertyDescription
+            .toLowerCase()
+            .includes(location.toLowerCase())
         : true;
-      const matchesSize = propertySizeNum
-        ? token.size <= propertySizeNum
-        : true;
+      const matchesSize =
+        propertySizeNum && token.propertySize
+          ? Math.abs(token.propertySize - propertySizeNum) <= 50
+          : true;
       const matchesMaxPrice = maxPriceNum
-        ? token.tokenPrice <= maxPriceNum
+        ? token.currentPrice <= maxPriceNum
         : true;
       return matchesLocation && matchesSize && matchesMaxPrice;
     });
@@ -175,14 +181,14 @@ const MarketPlace = () => {
                   Search through various land tokens
                 </h5>
               </div>
-              <Button
+              {/* <Button
                 variant="outline"
                 className="h-12 bg-white border-black text-black border-opacity-15 shadow-sm"
-                onClick={toggleMapVisibility}
+                // onClick={toggleMapVisibility}
               >
                 <Map />
                 {isMapVisible ? "Close Map" : "Open Map"}
-              </Button>
+              </Button> */}
             </div>
             <Separator className="mb-4" />
             <div className="w-full h-auto flex flex-row justify-center items-center">
@@ -268,15 +274,17 @@ const MarketPlace = () => {
                   <div className="grid grid-cols-4 gap-4 m-4 h-auto">
                     {searchResult.map((token) => (
                       <MarketCard
-                        key={token.tokenCode}
-                        tokenCode={token.tokenCode}
-                        propertyLocation={token.propertyLocation}
+                        key={token.landId}
+                        tokenCode={`${token.name}-` + token.landId}
+                        propertyLocation={`${token.distanceFromLandmark} from ${token.landmark}`}
+                        profitPercentage={null}
+                        previousPrice={null}
+                        chartData={null}
                         propertyType={token.propertyType}
-                        profitPercentage={token.profitLoss}
-                        currentPrice={token.tokenPrice}
-                        previousPrice={token.costPrice}
-                        chartData={token.chartData}
-                        onClick={() => handleMarketCardClick(token.tokenCode)}
+                        currentPrice={token.currentPrice}
+                        onClick={() =>
+                          handleMarketCardClick(`${token.name}-` + token.landId)
+                        }
                       />
                     ))}
                   </div>

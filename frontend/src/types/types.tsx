@@ -6,6 +6,8 @@ export interface LandToken {
   distanceFromLandmark: number;
   totalTokens: number;
   currentPrice: number;
+  propertySize: number;
+  propertyDescription: string;
 }
 
 export interface LandTokensData {
