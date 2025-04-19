@@ -2,7 +2,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W5",
     propertyLocation: "Kathmandu Ward 1",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "sold",
     amount: 10,
@@ -12,7 +12,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W6",
     propertyLocation: "Kathmandu Ward 2",
-    propertyType: "residential",
+    propertyType: "Residential",
     transactionDate: "2025-02-01",
     transactionType: "Sold",
     amount: 20,
@@ -22,7 +22,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W7",
     propertyLocation: "Kathmandu Ward 3",
-    propertyType: "agricultural",
+    propertyType: "Agricultural",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -32,7 +32,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W8",
     propertyLocation: "Kathmandu Ward 4",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -42,7 +42,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W9",
     propertyLocation: "Kathmandu Ward 5",
-    propertyType: "recreational",
+    propertyType: "Recreational",
     transactionDate: "2025-01-01",
     transactionType: "sold",
     amount: 10,
@@ -52,7 +52,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W10",
     propertyLocation: "Kathmandu Ward 6",
-    propertyType: "agricultural",
+    propertyType: "Agricultural",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -62,7 +62,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W11",
     propertyLocation: "Kathmandu Ward 7",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -72,7 +72,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W12",
     propertyLocation: "Kathmandu Ward 8",
-    propertyType: "recreational",
+    propertyType: "Recreational",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -82,7 +82,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W13",
     propertyLocation: "Kathmandu Ward 9",
-    propertyType: "agricultural",
+    propertyType: "Agricultural",
     transactionDate: "2025-01-01",
     transactionType: "sold",
     amount: 10,
@@ -92,7 +92,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W14",
     propertyLocation: "Kathmandu Ward 8",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -102,7 +102,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W15",
     propertyLocation: "Kathmandu Ward 7",
-    propertyType: "agricultural",
+    propertyType: "Agricultural",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -112,7 +112,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W16",
     propertyLocation: "Kathmandu Ward 6",
-    propertyType: "recreational",
+    propertyType: "Recreational",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -122,7 +122,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W17",
     propertyLocation: "Kathmandu Ward 5",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -132,7 +132,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W18",
     propertyLocation: "Kathmandu Ward 4",
-    propertyType: "agricultural",
+    propertyType: "Agricultural",
     transactionDate: "2025-01-01",
     transactionType: "sold",
     amount: 10,
@@ -142,7 +142,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W19",
     propertyLocation: "Kathmandu Ward 3",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -152,7 +152,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W20",
     propertyLocation: "Kathmandu Ward 2",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -162,7 +162,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W21",
     propertyLocation: "Kathmandu Ward 11",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "sold",
     amount: 10,
@@ -172,7 +172,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W22",
     propertyLocation: "Kathmandu Ward 12",
-    propertyType: "agricultural",
+    propertyType: "Agricultural",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -182,7 +182,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W23",
     propertyLocation: "Kathmandu Ward 13",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,
@@ -192,7 +192,7 @@ const transactions = [
   {
     tokenCode: "KTM-1154W24",
     propertyLocation: "Kathmandu Ward 14",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     transactionDate: "2025-01-01",
     transactionType: "Bought",
     amount: 10,

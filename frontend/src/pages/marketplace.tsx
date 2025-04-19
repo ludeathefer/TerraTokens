@@ -9,11 +9,43 @@ import { useEffect, useState } from "react";
 import MapComponent from "../components/common/MapComponent";
 import SlidingPanel from "../components/common/SlidingPanel";
 import { useNavigate } from "react-router-dom";
+import { gql, useQuery } from "@apollo/client";
 
+const LAND_TOKENS = gql`
+  query LandTokens {
+    landTokens {
+      landId
+      name
+      propertyType
+      landmark
+      distanceFromLandmark
+      totalTokens
+      currentPrice
+    }
+  }
+`;
+
+interface LandToken {
+  landId: number;
+  name: string;
+  propertyType: "Commercial" | "Residential" | "Agricultural" | "Recreational";
+  landmark: string;
+  distanceFromLandmark: number;
+  totalTokens: number;
+  currentPrice: number;
+}
+
+interface LandTokensData {
+  landTokens: LandToken[];
+}
 const MarketPlace = () => {
   const [recentlyBoughtTokens, setRecentlyBoughtToken] = useState<TableToken[]>(
     []
   );
+  const { loading, error, data } = useQuery<LandTokensData>(LAND_TOKENS);
+
+  const [landTokens, setLandTokens] = useState<LandToken[]>([]);
+
   const [popularTokens, setPopularTokens] = useState<TableToken[]>([]);
   const [searchResult, setSearchResult] = useState<TableToken[]>([]);
   const [location, setLocation] = useState("");
@@ -22,6 +54,14 @@ const MarketPlace = () => {
   const [isSearchPressed, setIsSearchPressed] = useState(true);
   const [isMapVisible, setIsMapVisible] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) {
+      setLandTokens(data.landTokens);
+    }
+  }, [data]);
+
+  console.log(landTokens);
 
   useEffect(() => {
     const currentDate = new Date();
@@ -166,7 +206,6 @@ const MarketPlace = () => {
                 onLocationChange={setLocation}
                 onPropertySizeChange={setPropertySize}
                 onMaxPriceChange={setMaxPrice}
-                onClick={() => handleMarketCardClick(token.tokenCode)}
               />
             </div>
 
@@ -179,19 +218,29 @@ const MarketPlace = () => {
                   </h1>
                   <ScrollArea className="w-auto rounded-2xl px-3 max-h-auto w-full overflow-y-auto border-x-8 border-white">
                     <div className="flex flex-row gap-4 my-4">
-                      {recentlyBoughtTokens.map((token) => (
-                        <MarketCard
-                          key={token.tokenCode}
-                          tokenCode={token.tokenCode}
-                          propertyLocation={token.propertyLocation}
-                          propertyType={token.propertyType}
-                          profitPercentage={token.profitLoss}
-                          currentPrice={token.tokenPrice}
-                          previousPrice={token.costPrice}
-                          chartData={token.chartData}
-                          onClick={() => handleMarketCardClick(token.tokenCode)}
-                        />
-                      ))}
+                      {loading ? (
+                        <p>Loading...</p>
+                      ) : error ? (
+                        <p>Error</p>
+                      ) : (
+                        landTokens.map((token) => (
+                          <MarketCard
+                            key={token.landId}
+                            tokenCode={`${token.name}-` + token.landId}
+                            propertyLocation={`${token.distanceFromLandmark} from ${token.landmark}`}
+                            profitPercentage={null}
+                            previousPrice={null}
+                            chartData={null}
+                            propertyType={token.propertyType}
+                            currentPrice={token.currentPrice}
+                            onClick={() =>
+                              handleMarketCardClick(
+                                `${token.name}-` + token.landId
+                              )
+                            }
+                          />
+                        ))
+                      )}
                     </div>
                     <ScrollBar orientation="horizontal" className="hidden" />
                   </ScrollArea>

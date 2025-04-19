@@ -18,9 +18,9 @@ import WatchlistDialog from "../components/dialogs/WatchlistDialog";
 import Graphs from "../components/common/Graphs";
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  // DialogContent,
+  // DialogHeader,
+  // DialogTitle,
   DialogTrigger,
 } from "../components/ui/dialog";
 import FilterDialog from "../components/dialogs/FilterDialog";
@@ -234,19 +234,19 @@ const Dashboard = () => {
                 <Graphs
                   chartData={chartData}
                   chartConfig={{
-                    commercial: {
+                    Commercial: {
                       label: "Commercial Token Value",
                       color: "#4CAF50", // Green color for commercial tokens
                     },
-                    residential: {
+                    Residential: {
                       label: "Residential Token Value",
                       color: "#2196F3", // Blue color for residential tokens
                     },
-                    agricultural: {
+                    Agricultural: {
                       label: "Agricultural Token Value",
                       color: "#FF9800", // Orange color for agricultural tokens
                     },
-                    recreational: {
+                    Recreational: {
                       label: "Recreational Token Value",
                       color: "#9C27B0", // Purple color for recreational tokens
                     },

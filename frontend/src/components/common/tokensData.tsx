@@ -8,7 +8,7 @@ export interface LatLang {
 export interface TableToken {
   tokenCode: string;
   propertyLocation: string;
-  propertyType: "commercial" | "residential" | "agricultural" | "recreational";
+  propertyType: "Commercial" | "Residential" | "Agricultural" | "Recreational";
   boughtDate: string | Date;
   amount: number;
   profitLoss: number;
@@ -20,6 +20,25 @@ export interface TableToken {
   latLang: LatLang;
 }
 
+export interface FetchedToken {
+  name: string;
+  propertyType: "Commercial" | "Residential" | "Agricultural" | "Recreational";
+  updatedAt: string | Date;
+  totalTokens: number;
+  propertySize: number;
+  propertySizeUnit: string;
+  latitude: string;
+  longitude: string;
+  currentPrice: number;
+  landmark: string;
+  distanceFromLandmark: number;
+  distanceUnit: string;
+  propertyDescription: string;
+}
+
+export interface TokenQueryData {
+  landToken: FetchedToken;
+}
 function generateRandomLatLang() {
   // Latitude range for Kathmandu (approximately)
   const latMin = 27.5;
@@ -57,7 +76,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W5",
     propertyLocation: "Kathmandu Ward 1",
-    propertyType: "commercial",
+    propertyType: "Commercial",
     boughtDate: "2023-01-01",
     amount: 10,
     costPrice: 950, // Assume a costPrice
@@ -71,7 +90,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W6",
     propertyLocation: "Kathmandu Ward 2",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-02",
     amount: 20,
     costPrice: 530, // Assume a costPrice
@@ -85,7 +104,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W7",
     propertyLocation: "Kathmandu Ward 2",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-01",
     amount: 20,
     costPrice: 680, // Assume a costPrice
@@ -99,7 +118,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W8",
     propertyLocation: "Kathmandu Ward 8",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-03",
     amount: 20,
     costPrice: 490, // Assume a costPrice
@@ -113,7 +132,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W9",
     propertyLocation: "Kathmandu Ward 9",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-02",
     amount: 20,
     costPrice: 810, // Assume a costPrice
@@ -127,7 +146,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W52",
     propertyLocation: "Kathmandu Ward 2",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-02",
     amount: 20,
     costPrice: 530, // Assume a costPrice
@@ -141,7 +160,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W53",
     propertyLocation: "Kathmandu Ward 2",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-01",
     amount: 20,
     costPrice: 680, // Assume a costPrice
@@ -155,7 +174,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W54",
     propertyLocation: "Kathmandu Ward 8",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-03",
     amount: 20,
     costPrice: 490, // Assume a costPrice
@@ -169,7 +188,7 @@ export const tokens: TableToken[] = [
   {
     tokenCode: "KTM-1154W55",
     propertyLocation: "Kathmandu Ward 9",
-    propertyType: "residential",
+    propertyType: "Residential",
     boughtDate: "2025-03-02",
     amount: 20,
     costPrice: 810, // Assume a costPrice

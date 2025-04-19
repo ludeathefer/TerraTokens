@@ -8,13 +8,13 @@ interface LandInfoProps {
 
 const getIcon = (propertyType: LandInfoProps["propertyType"]) => {
   switch (propertyType) {
-    case "commercial":
+    case "Commercial":
       return <Building className="w-5 h-5 text-black" />;
-    case "residential":
+    case "Residential":
       return <Home className="w-5 h-5 text-black" />;
-    case "agricultural":
+    case "Agricultural":
       return <Leaf className="w-5 h-5 text-black" />;
-    case "recreational":
+    case "Recreational":
       return <Mountain className="w-5 h-5 text-black" />;
     default:
       return <Building className="w-5 h-5 text-black" />; // Default to Building icon

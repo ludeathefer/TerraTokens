@@ -28,18 +28,7 @@ const LAND_TOKENS = gql`
       landId
       name
       totalTokens
-      createdAt
-      updatedAt
       currentPrice
-      propertyType
-      propertySize
-      propertySizeUnit
-      landmark
-      distanceFromLandmark
-      distanceUnit
-      propertyDescription
-      latitude
-      longitude
     }
   }
 `;
