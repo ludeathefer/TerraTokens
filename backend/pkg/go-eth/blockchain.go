@@ -221,17 +221,19 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 				}
 
 				updateBuyerOwnedTokens := `
-								INSERT INTO owned_tokens (user_public_key, land_token_id, quantity)
+								INSERT INTO owned_tokens (user_public_key, land_token_id, bought_price, quantity)
 								VALUES (?, ?, ?)
-								ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity);
+								ON DUPLICATE KEY UPDATE 
+								bought_price = VALUES(bought_price),
+								quantity = quantity + VALUES(quantity);
 				`
-				_, err = db.ExecContext(ctx, updateBuyerOwnedTokens, event.Buyer.Hex(), landId, amount)
+				_, err = db.ExecContext(ctx, updateBuyerOwnedTokens, event.Buyer.Hex(), landId, pricePerToken, amount)
 				if err != nil {
 					log.Printf("failed to update buyer owned_tokens: %v", err)
 				}
 
 				updateSellerOwnedTokens := `
-								UPDATE owned_tokens SET quantity = quantity - ? WHERE user_public_key = ? AND land_token_id = ?;
+						UPDATE owned_tokens SET quantity = quantity - ? WHERE user_public_key = ? AND land_token_id = ?;
 				`
 				_, err = db.ExecContext(ctx, updateSellerOwnedTokens, amount, event.Seller.Hex(), landId)
 				if err != nil {
@@ -245,6 +247,12 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 				_, err = db.ExecContext(ctx, insertTransactedTokens, landId, amount, pricePerToken, event.Seller.Hex(), event.Buyer.Hex())
 				if err != nil {
 					log.Printf("failed to insert transacted tokens: %v", err)
+				}
+
+				deleteOwnedIfZero := `DELETE FROM owned_tokens WHERE user_public_key = ? AND quantity = 0;`
+				_, err = db.ExecContext(ctx, deleteOwnedIfZero, event.Seller.Hex())
+				if err != nil {
+					log.Printf("failed to delete owned if quantity is zero: %v", err)
 				}
 
 				deleteSaleIfZero := `DELETE FROM sales WHERE seller_id = ? AND quantity = 0;`
