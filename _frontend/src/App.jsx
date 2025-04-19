@@ -6,6 +6,8 @@ import BuyTokens from "../components/BuyTokens";
 import CreateSale from "../components/CreateSale";
 import ViewTokens from "../components/ViewTokens";
 import ViewSales from "../components/ViewSales";
+import UpdateSale from "../components/UpdateSale";
+import DeleteSale from "../components/DeleteSale";
 
 const contractAddress = `0x5FbDB2315678afecb367f032d93F642f64180aa3`;
 
@@ -46,6 +48,8 @@ export default function App() {
       <CreateSale contractAddress={contractAddress} signer={signer} />
       <ViewSales authToken={authToken} />
       <BuyTokens contractAddress={contractAddress} signer={signer} />
+      <UpdateSale contractAddress={contractAddress} signer={signer} />
+      <DeleteSale contractAddress={contractAddress} signer={signer} />
     </div>
   );
 }

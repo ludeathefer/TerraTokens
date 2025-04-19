@@ -178,24 +178,11 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 				amount := int32(event.Amount.Int64())
 				pricePerToken, _ := event.PricePerToken.Float64()
 
-				query := `SELECT name FROM land_tokens WHERE land_id = ?`
-				row := db.QueryRowContext(ctx, query, landId)
-
-				var name string
-				err := row.Scan(&name)
-				if err == sql.ErrNoRows {
-					log.Printf("Land token not found for land ID %v", landId)
-					continue
-				} else if err != nil {
-					log.Printf("Failed to scan land token: %v", err)
-					continue
-				}
-
-				insertSaleQuery := `
-				INSERT INTO sales (land_token_id, quantity, price, seller_id)
+				replaceSaleQuery := `
+				REPLACE INTO sales (land_token_id, quantity, price, seller_id)
 				VALUES (?, ?, ?, ?);
 			`
-				_, err = db.ExecContext(ctx, insertSaleQuery, landId, amount, float32(pricePerToken), event.Seller.Hex())
+				_, err = db.ExecContext(ctx, replaceSaleQuery, landId, amount, float32(pricePerToken), event.Seller.Hex())
 				if err != nil {
 					log.Printf("Failed to insert sale into database: %v", err)
 				}
@@ -266,8 +253,6 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 					log.Printf("failed to delete sale if quantity is zero: %v", err)
 				}
 
-				// TODO: Handle the purchase logic (e.g., updating ownership, history etc.)
-
 			case err := <-tokensPurchasedSub.Err():
 				if err != nil {
 					log.Printf("TokensPurchased subscription error: %v", err)
@@ -291,7 +276,11 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 				}
 				log.Printf("TokensListingCancelled: LandID=%v, Seller=%s, Amount=%v, PricePerToken=%v\n", event.LandId, event.Seller.Hex(), event.Amount, event.PricePerToken)
 
-				// TODO: Handle removing listing from DB if needed
+				deleteSale := `DELETE FROM sales WHERE seller_id = ?`
+				_, err = db.ExecContext(ctx, deleteSale, event.Seller.Hex())
+				if err != nil {
+					log.Printf("failed to delete sale: %v", err)
+				}
 
 			case err := <-tokensCancelledSub.Err():
 				if err != nil {
