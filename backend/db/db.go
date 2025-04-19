@@ -123,7 +123,9 @@ func AutoMigrate(db *sql.DB) error {
     CREATE TABLE IF NOT EXISTS owned_tokens (
                     user_public_key VARCHAR(130) NOT NULL,
                     land_token_id INT NOT NULL,
+					bought_price DOUBLE PRECISION NOT NULL,
                     quantity INT NOT NULL,
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     PRIMARY KEY (user_public_key, land_token_id),
                     FOREIGN KEY (user_public_key) REFERENCES users(public_key) ON DELETE CASCADE,
                     FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE

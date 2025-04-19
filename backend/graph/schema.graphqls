@@ -2,11 +2,6 @@ scalar Time
 
 directive @auth(requires: [String!] = []) on FIELD_DEFINITION
 
-directive @goTag(
-  key: String!
-  value: String
-) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
-
 # models
 type Price {
   id: ID!
@@ -40,9 +35,11 @@ type Role {
 }
 
 type OwnedToken {
-  id: ID!
+  userPublicKey: String!
   landToken: LandToken!
+  boughtPrice: Float!
   quantity: Int!
+  createdAt: Time!
 }
 
 type TransactedToken {
@@ -56,7 +53,7 @@ type TransactedToken {
 }
 
 type Sale {
-  id: ID!
+  sellerId: String!
   landToken: LandToken!
   quantity: Int!
   price: Float!
@@ -142,6 +139,8 @@ type Query {
   landToken(landId: Int!): LandToken @auth
   sales: [Sale!]! @auth
   sale(id: ID!): Sale @auth
+  ownedTokens: [OwnedToken!]! @auth
+  transactedTokens: [TransactedToken!] @auth
 }
 
 type Mutation {
@@ -152,12 +151,12 @@ type Mutation {
     @auth(requires: ["admin"])
   updateLandToken(publicKey: String!, input: CreateLandTokenInput!): LandToken!
     @auth(requires: ["admin"])
-  addPriceToLandToken(publicKey: String!, input: CreatePriceInput!): LandToken!
+  addPriceToLandToken(landId: Int!, input: CreatePriceInput!): LandToken!
     @auth(requires: ["admin"])
-  buyToken(input: BuyTokenInput!): TransactedToken! @auth
+  # buyToken(input: BuyTokenInput!): TransactedToken! @auth
   # createSale(input: CreateSaleInput!): Sale! @auth
-  updateSale(id: ID!, input: UpdateSaleInput!): Sale! @auth
-  deleteSale(id: ID!): Boolean! @auth
+  # updateSale(id: ID!, input: UpdateSaleInput!): Sale! @auth
+  # deleteSale(id: ID!): Boolean! @auth
   addToWatchlist(publicKey: String!): User @auth
   removeFromWatchlist(publicKey: String!): User @auth
 }

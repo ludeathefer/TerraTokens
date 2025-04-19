@@ -71,9 +71,11 @@ type Mutation struct {
 }
 
 type OwnedToken struct {
-	ID        int        `json:"id"`
-	LandToken *LandToken `json:"landToken"`
-	Quantity  int32      `json:"quantity"`
+	UserPublicKey string     `json:"userPublicKey"`
+	LandToken     *LandToken `json:"landToken"`
+	BoughtPrice   float64    `json:"boughtPrice"`
+	Quantity      int32      `json:"quantity"`
+	CreatedAt     time.Time  `json:"createdAt"`
 }
 
 type Price struct {
@@ -92,7 +94,7 @@ type Role struct {
 }
 
 type Sale struct {
-	ID        int        `json:"id"`
+	SellerID  string     `json:"sellerId"`
 	LandToken *LandToken `json:"landToken"`
 	Quantity  int32      `json:"quantity"`
 	Price     float64    `json:"price"`
