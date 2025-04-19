@@ -18,6 +18,7 @@ async function connectWallet() {
   await provider.send("eth_requestAccounts", []);
 
   const signer = await provider.getSigner();
+  console.log(signer);
   const userAddress = await signer.getAddress();
 
   return { provider, signer, userAddress };

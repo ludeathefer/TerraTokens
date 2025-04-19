@@ -10,6 +10,7 @@ import MapComponent from "../components/common/MapComponent";
 import SlidingPanel from "../components/common/SlidingPanel";
 import { useNavigate } from "react-router-dom";
 import { gql, useQuery } from "@apollo/client";
+import { LandToken, LandTokensData } from "../types/types";
 
 const LAND_TOKENS = gql`
   query LandTokens {
@@ -25,19 +26,6 @@ const LAND_TOKENS = gql`
   }
 `;
 
-interface LandToken {
-  landId: number;
-  name: string;
-  propertyType: "Commercial" | "Residential" | "Agricultural" | "Recreational";
-  landmark: string;
-  distanceFromLandmark: number;
-  totalTokens: number;
-  currentPrice: number;
-}
-
-interface LandTokensData {
-  landTokens: LandToken[];
-}
 const MarketPlace = () => {
   const [recentlyBoughtTokens, setRecentlyBoughtToken] = useState<TableToken[]>(
     []

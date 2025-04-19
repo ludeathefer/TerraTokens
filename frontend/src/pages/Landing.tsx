@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { Button } from "../components/ui/button";
 import meta from "../../src/assets/meta.png";
 // import { Separator } from "../components/ui/separator";
@@ -10,6 +11,7 @@ import { useStore } from "../hooks/use-store";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/common/SearchBar";
 import { gql, useLazyQuery } from "@apollo/client";
+import { ethers } from "ethers";
 
 const LOGIN = gql`
   query Login($publicKey: String!) {
@@ -28,6 +30,7 @@ const Landing = () => {
   const [isMetamaskInstalled, setIsMetamaskInstalled] =
     useState<boolean>(false);
   const [account, setAccount] = useState<string | null>(null);
+  const [signer, setSigner] = useState<any>(null);
   const navigate = useNavigate();
   const setAuth = useStore((state) => state.setAuth);
 
@@ -79,6 +82,9 @@ const Landing = () => {
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      setSigner(signer);
       const selectedAccount = accounts[0];
       console.log(selectedAccount);
       setAccount(selectedAccount); // Update account state

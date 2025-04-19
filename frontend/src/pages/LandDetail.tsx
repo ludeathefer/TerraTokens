@@ -12,14 +12,16 @@ import { Separator } from "../components/ui/separator";
 import { ScrollArea, ScrollBar } from "../components/ui/scroll-area";
 import { Label } from "../components/ui/label";
 import LandInfo, { getIcon } from "../components/common/LandInfo";
+import contractABI from "../contractABI";
 
 import {
   tokens,
   TableToken,
   TokenQueryData,
 } from "../components/common/tokensData";
+import { SalesQueryData } from "../types/salesType";
 import Graphs from "../components/common/Graphs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MapComponent from "../components/common/MapComponent";
 import {
@@ -32,6 +34,11 @@ import {
 import { Input } from "../components/ui/input";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import { useStore } from "../hooks/use-store";
+import { ethers } from "ethers";
+import Landing from "./Landing";
+import { LandToken, LandTokensData } from "../types/types";
+
+const contractAddress = `0x5FbDB2315678afecb367f032d93F642f64180aa3`;
 
 const TOKEN_DETAILS = gql`
   query LandToken {
@@ -52,6 +59,37 @@ const TOKEN_DETAILS = gql`
     }
   }
 `;
+
+const SALES = gql`
+  query Sales {
+    sales {
+      quantity
+      price
+      landToken {
+        landId
+      }
+      seller {
+        publicKey
+      }
+      createdAt
+    }
+  }
+`;
+
+const LAND_TOKENS = gql`
+  query LandTokens {
+    landTokens {
+      landId
+      name
+      propertyType
+      landmark
+      distanceFromLandmark
+      totalTokens
+      currentPrice
+    }
+  }
+`;
+
 // const CREATE_SALE = gql`
 //   mutation CreateSale($privateKey: String!, $input: CreateSaleInput!) {
 //     createSale(privateKey: $privateKey, input: $input) {
@@ -98,34 +136,12 @@ const LandDetail = () => {
   const { tokenId } = useParams(); // Get the tokenID from the URL
   const regex = /^([A-Za-z]+)-(\d+)$/;
   const match = tokenId.match(regex);
+  const landId = match[2];
   const authToken = useStore().jwt;
+  const myPublicKey = useStore().userPublicKey;
 
   const navigate = useNavigate();
   const [token, setToken] = useState<TokenQueryData>(null);
-  const [tokensForSale, setTokensForSale] = useState([
-    {
-      tokenCode: "KTM-1154W8",
-      propertyLocation: "Kathmandu Ward 8",
-      propertyType: "Residential",
-      boughtDate: "2025-03-03",
-      amount: 20,
-      costPrice: 490, // Assume a costPrice
-      tokenPrice: 500,
-      profitLoss: -20, // Will be recalculated
-      size: 4,
-    },
-    {
-      tokenCode: "KTM-1154W9",
-      propertyLocation: "Kathmandu Ward 9",
-      propertyType: "Residential",
-      boughtDate: "2025-03-02",
-      amount: 30,
-      costPrice: 810, // Assume a costPrice
-      tokenPrice: 800,
-      profitLoss: 13, // Will be recalculated
-      size: 4,
-    },
-  ]);
 
   // const landToken = useQuery(LAND_TOKEN);
 
@@ -134,7 +150,6 @@ const LandDetail = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState(null);
   const [isTokenSelected, setIsTokenSelected] = useState(false);
-  const [numTokensOwned, setNumTokensOwned] = useState(0);
   const [numTokensForSale, setNumTokensForSale] = useState(0);
   const [isBuyDialogOpen, setIsBuyDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -143,27 +158,45 @@ const LandDetail = () => {
   const [numTokensToEdit, setNumTokensToEdit] = useState(0);
   const [pricePerToken, setPricePerToken] = useState(0);
 
-  const handleAddTokenForSale = async () => {
-    if (numTokensForSale > numTokensOwned) {
-      alert("You cannot enlist more tokens than you own.");
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+
+  interface LandTokensQueryResponse {
+    landTokens: LandToken[];
+  }
+
+  const handleAddTokenForSale = async (
+    landId: number,
+    amount: number,
+    price: number
+  ) => {
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+    try {
+      const approvalTx = await contract.setApprovalForAll(
+        contractAddress,
+        true
+      );
+      const approvalReceipt = await approvalTx.wait();
+      console.log("Approval confirmed:", approvalReceipt);
+    } catch (approvalError) {
+      console.error("Error during approval:", approvalError);
       return;
     }
 
-    const tokenWithDetails = {
-      ...token, // Use the current token from state instead of selectedToken
-      amount: numTokensForSale,
-      tokenPrice: token.currentPrice, // Or set a new price if needed
-      profitLoss: 10, // Set initial profit/loss to 0
-      // Add other required fields
-    };
+    try {
+      const tx = await contract.listTokensForSale(landId, amount, price);
+      const receipt = await tx.wait();
+      console.log("Transaction confirmed:", receipt);
+    } catch (saleError) {
+      console.error("Error during sale:", saleError);
+    }
 
-    // setTokensForSale([...tokensForSale, tokenWithDetails]);
     setIsTokenSelected(false);
     setIsDialogOpen(false);
-    setNumTokensOwned(0);
-    setNumTokensForSale(0);
   };
-  const { loading, error, data } = useQuery<FetchedTokens>(TOKEN_DETAILS, {
+
+  const { loading, error, data } = useQuery<TokenQueryData>(TOKEN_DETAILS, {
     context: {
       headers: {
         Authorization: `Bearer ${authToken}`,
@@ -171,86 +204,79 @@ const LandDetail = () => {
     },
   });
 
+  const {
+    loading: salesLoading,
+    error: salesError,
+    data: salesData,
+  } = useQuery<SalesQueryData>(SALES, {
+    context: {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    },
+  });
+
+  const {
+    loading: simLandLoading,
+    error: simLandError,
+    data: similarTokens,
+  } = useQuery<LandTokensQueryResponse>(LAND_TOKENS);
+
+  console.log(similarTokens.landTokens[0]);
   if (loading) {
     return <div>Loading...</div>; // Handle the case where the token is not found
   }
   // const chartData = token.
 
-  // const handleBuyTokens = () => {
-  //   // Update the state to reflect the purchase
-  //   const updatedTokensForSale = tokensForSale.map((token) => {
-  //     if (token.tokenCode === selectedTokenForAction.tokenCode) {
-  //       return {
-  //         ...token,
-  //         amount: token.amount - numTokensToBuy,
-  //       };
-  //     }
-  //     return token;
-  //   });
+  const handleBuyTokens = async (
+    landId: number,
+    amount: number,
+    price: number,
+    seller: string
+  ) => {
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-  //   setTokensForSale(updatedTokensForSale);
-  //   setIsBuyDialogOpen(false);
-  // };
+    const order = {
+      seller: seller,
+      landId: landId,
+      amount: amount,
+      pricePerToken: price,
+    };
 
-  const handleBuyTokens = async () => {
-    try {
-      // Ensure MetaMask is available
-      if (!window.ethereum) {
-        alert("Please install MetaMask to proceed.");
-        return;
-      }
-
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      const recipientAddress = "0x2546BcD3c84621e976D8185a91A922aE77ECEc30";
-      const amountInWei = ethers.utils.parseEther(numTokensToBuy.toString());
-
-      const transaction = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: accounts[0],
-            to: recipientAddress,
-            value: amountInWei.toString(),
-          },
-        ],
-      });
-
-      console.log("Transaction initiated:", transaction);
-    } catch (error) {
-      if (error.code === 4001) {
-        console.log("User rejected the transaction");
-        // Display a neutral message to the user
-        alert("Transaction not completed.");
-      } else if (error.code === -32603) {
-        console.log("Invalid transaction parameters");
-        // Handle invalid transaction parameters
-        alert("Invalid transaction details.");
-      } else {
-        console.error("Transaction failed:", error);
-        // Handle other errors gracefully
-        alert("An error occurred. Please try again.");
-      }
-    }
-  };
-
-  const handleEditTokens = () => {
-    // Update the state to reflect the edit
-    const updatedTokensForSale = tokensForSale.map((token) => {
-      if (token.tokenCode === selectedTokenForAction.tokenCode) {
-        console.log(token);
-        return {
-          ...token,
-          amount: numTokensToEdit,
-          tokenPrice: pricePerToken,
-        };
-      }
-      return token;
+    const tx = await contract.purchaseTokens(1, order, {
+      value: order.amount * order.pricePerToken,
     });
 
-    setTokensForSale(updatedTokensForSale);
+    const receipt = await tx.wait();
+    console.log("Transaction confirmed:", receipt);
+    setIsBuyDialogOpen(false);
+  };
+
+  const handleEditTokens = async (
+    landId: number,
+    amount: number,
+    price: number
+  ) => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+    try {
+      const approvalTx = await contract.setApprovalForAll(
+        contractAddress,
+        true
+      );
+      const approvalReceipt = await approvalTx.wait();
+      console.log("Approval confirmed:", approvalReceipt);
+    } catch (approvalError) {
+      console.error("Error during approval:", approvalError);
+      return;
+    }
+
+    const tx = await contract.updateTokenListing(landId, amount, price);
+    const receipt = await tx.wait();
+    console.log("Transaction confirmed:", receipt);
+
     setIsEditDialogOpen(false);
     // setNumTokensToEdit(0);
     // setPricePerToken(0);
@@ -542,16 +568,6 @@ const LandDetail = () => {
                           </DialogHeader>
                           <div className="flex flex-col gap-4  ">
                             <div>
-                              <Label>No of Tokens You Own</Label>
-                              <Input
-                                type="number"
-                                value={numTokensOwned}
-                                onChange={(e) =>
-                                  setNumTokensOwned(Number(e.target.value))
-                                }
-                              />
-                            </div>
-                            <div>
                               <Label>No of Tokens to Enlist for Sale</Label>
                               <Input
                                 type="number"
@@ -561,9 +577,25 @@ const LandDetail = () => {
                                 }
                               />
                             </div>
+                            <div>
+                              <Label>Enlisting Price</Label>
+                              <Input
+                                type="number"
+                                value={pricePerToken}
+                                onChange={(e) =>
+                                  setPricePerToken(Number(e.target.value))
+                                }
+                              />
+                            </div>
                             <Button
                               variant="outline"
-                              onClick={handleAddTokenForSale}
+                              onClick={() =>
+                                handleAddTokenForSale(
+                                  Number(landId),
+                                  numTokensForSale,
+                                  pricePerToken
+                                )
+                              }
                               className="bg-white text-black"
                             >
                               Add to Sale List
@@ -594,7 +626,14 @@ const LandDetail = () => {
                             <Button
                               variant="outline"
                               className="bg-white text-black"
-                              onClick={handleBuyTokens}
+                              onClick={() =>
+                                handleBuyTokens(
+                                  Number(landId),
+                                  numTokensToBuy,
+                                  100,
+                                  "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+                                )
+                              }
                             >
                               Buy
                             </Button>
@@ -633,7 +672,13 @@ const LandDetail = () => {
                               />
                             </div>
                             <Button
-                              onClick={handleEditTokens}
+                              onClick={() =>
+                                handleEditTokens(
+                                  Number(landId),
+                                  numTokensToEdit,
+                                  pricePerToken
+                                )
+                              }
                               variant="outline"
                               className="text-black bg-white"
                             >
@@ -659,26 +704,26 @@ const LandDetail = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {tokensForSale.map((token, index) => (
+                          {salesData?.sales.map((token, index) => (
                             <TableRow
                               key={index}
                               onClick={() => handleRowClick(token, index)}
                             >
                               <TableCell className="text-black text-sm font-normal">
-                                {data.landToken.amount}
+                                {token.quantity}
                               </TableCell>
                               <TableCell className="text-black text-sm font-normal">
-                                Rs {data.landToken.tokenPrice}
+                                Rs {token.price}
                               </TableCell>
                               <TableCell>
                                 <Label
                                   className={`${
-                                    data.landToken.profitLoss > 0
+                                    token.price > data.landToken.currentPrice
                                       ? "text-red-500"
                                       : "text-[#0c8ce9]"
                                   } text-sm font-bold`}
                                 >
-                                  {data.landToken.profitLoss > 0
+                                  {token.seller.publicKey == myPublicKey
                                     ? "Edit"
                                     : "Buy"}
                                 </Label>
@@ -697,48 +742,46 @@ const LandDetail = () => {
                         Similar Lands
                       </h1>
                     </div>
-                    {/* <ScrollArea className="h-[17rem]  rounded-2xl py-3 px-3 border-x-8 border-white ">
-                    {tokens
-                      .filter(
-                        (similarToken) =>
-                          similarToken.propertyType === token.propertyType &&
-                          similarToken.tokenCode !== token.tokenCode
-                      )
-                      .map((similarToken) => (
-                        <div className="flex flex-col">
-                          <div
-                            key={similarToken.tokenCode}
-                            className="mb-2 flex flex-row gap-20 cursor-pointer hover:bg-gray-50 p-2 "
-                            onClick={() =>
-                              navigate(`/land-detail/${similarToken.tokenCode}`)
-                            }
-                          >
-                            <LandInfo
-                              tokenCode={similarToken.tokenCode}
-                              propertyLocation={similarToken.propertyLocation}
-                              propertyType={similarToken.propertyType}
-                            />
-                            <div className="flex flex-col items-end">
-                              <h3 className="font-bold text-black text-sm">
-                                Rs. {similarToken.tokenPrice}
-                              </h3>
-                              <h4
-                                className={`font-bold text-xs ${
-                                  similarToken.profitLoss > 0
-                                    ? "text-[#179413]"
-                                    : "text-red-500"
-                                }`}
-                              >
-                                {similarToken.profitLoss > 0
-                                  ? `+${similarToken.profitLoss}%`
-                                  : `${similarToken.profitLoss}%`}
-                              </h4>
+                    <ScrollArea className="h-[17rem]  rounded-2xl py-3 px-3 border-x-8 border-white ">
+                      {similarTokens?.landTokens
+                        .filter(
+                          (similarToken) =>
+                            similarToken?.propertyType ===
+                            data.landToken.propertyType
+                        )
+                        .map((similarToken) => (
+                          <div className="flex flex-col">
+                            <div
+                              key={similarToken.landId}
+                              className="mb-2 flex flex-row gap-20 cursor-pointer hover:bg-gray-50 p-2 "
+                              onClick={() =>
+                                navigate(
+                                  `/land-detail/${similarToken.name}-${similarToken.landId}`
+                                )
+                              }
+                            >
+                              <LandInfo
+                                tokenCode={`${similarToken.name}-${similarToken.landId}`}
+                                propertyLocation={`${similarToken.distanceFromLandmark} from ${similarToken.landmark}`}
+                                propertyType={similarToken.propertyType}
+                              />
+                              <div className="flex flex-col items-end">
+                                <h3 className="font-bold text-black text-sm">
+                                  Rs. {similarToken.currentPrice}
+                                </h3>
+                                <h4
+                                  className={`font-bold text-xs ${
+                                    20 > 0 ? "text-[#179413]" : "text-red-500"
+                                  }`}
+                                >
+                                  {20 > 0 ? `+${20}%` : `${20}%`}
+                                </h4>
+                              </div>
                             </div>
+                            <Separator className="mb-4" />
                           </div>
-                          <Separator className="mb-4" />
-                        </div>
-                      ))}
-                  </ScrollArea> */}
+                        ))}
+                    </ScrollArea>
                   </div>
                 </div>
               </div>
