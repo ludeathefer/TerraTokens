@@ -120,15 +120,15 @@ func AutoMigrate(db *sql.DB) error {
 
 	// Create owned_tokens table (User owns Land Tokens)
 	queryOwnedTokens := `
-	CREATE TABLE IF NOT EXISTS owned_tokens (
-					id SERIAL PRIMARY KEY,
-					user_public_key VARCHAR(130) NOT NULL,
-					land_token_id INT NOT NULL,
-					quantity INT NOT NULL,
-					FOREIGN KEY (user_public_key) REFERENCES users(public_key) ON DELETE CASCADE,
-					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE
-	);
-	`
+    CREATE TABLE IF NOT EXISTS owned_tokens (
+                    user_public_key VARCHAR(130) NOT NULL,
+                    land_token_id INT NOT NULL,
+                    quantity INT NOT NULL,
+                    PRIMARY KEY (user_public_key, land_token_id),
+                    FOREIGN KEY (user_public_key) REFERENCES users(public_key) ON DELETE CASCADE,
+                    FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE
+    );
+    `
 	_, err = db.Exec(queryOwnedTokens)
 	if err != nil {
 		return fmt.Errorf("failed to create owned_tokens table: %w", err)
@@ -141,7 +141,7 @@ func AutoMigrate(db *sql.DB) error {
 					land_token_id INT NOT NULL,
 					quantity INT NOT NULL,
 					price DOUBLE PRECISION NOT NULL,
-					seller_id VARCHAR(130) NOT NULL,
+					seller_id VARCHAR(130) NOT NULL UNIQUE,
 					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE,
 					FOREIGN KEY (seller_id) REFERENCES users(public_key) ON DELETE CASCADE

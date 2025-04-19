@@ -11,6 +11,7 @@ import (
 type BlockchainConfig struct {
 	RpcUrl          string
 	ContractAddress string
+	MinerAddress    string
 }
 
 type JwtConfig struct {
@@ -64,6 +65,7 @@ func LoadConfig() *Config {
 		Blockchain: BlockchainConfig{
 			RpcUrl:          getEnv("RPC_URL", "http://localhost:8085"),
 			ContractAddress: getEnv("CONTRACT_ADDRESS", "0xg3ty0uraddr3551n3nvthi5i5no7g0ingt0w0rk"),
+			MinerAddress:    getEnv("MINER_ADDRESS", "0xthi5i5no7g0ingt0w0rk31th3rm1ney04rs3lf"),
 		},
 	}
 }

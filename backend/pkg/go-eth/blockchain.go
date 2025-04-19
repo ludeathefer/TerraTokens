@@ -16,6 +16,7 @@ type BlockchainClient struct {
 	Client          *ethclient.Client
 	Land            *Land
 	ContractAddress common.Address
+	MinerAddress    common.Address
 }
 
 var db *sql.DB
@@ -27,6 +28,8 @@ func NewConn(cfg config.BlockchainConfig, database *sql.DB) (*BlockchainClient, 
 	}
 
 	contractAddress := common.HexToAddress(cfg.ContractAddress)
+	minerAddress := common.HexToAddress(cfg.MinerAddress)
+	log.Printf("Miner address: %v %v", minerAddress, cfg.MinerAddress)
 
 	land, err := NewLand(contractAddress, conn)
 	if err != nil {
@@ -37,6 +40,7 @@ func NewConn(cfg config.BlockchainConfig, database *sql.DB) (*BlockchainClient, 
 		Client:          conn,
 		Land:            land,
 		ContractAddress: contractAddress,
+		MinerAddress:    minerAddress,
 	}
 
 	db = database
@@ -112,6 +116,16 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 				_, err := db.ExecContext(ctx, query, landId, event.Name, numberOfFractions)
 				if err != nil {
 					log.Printf("Failed inserting landId %v into database: %v", landId, err)
+				}
+
+				updateMinerOwnedTokens := `
+					INSERT INTO owned_tokens (user_public_key, land_token_id, quantity)
+					VALUES (?, ?, ?)
+					ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity);
+				`
+				_, err = db.ExecContext(ctx, updateMinerOwnedTokens, bcc.MinerAddress.String(), landId, numberOfFractions)
+				if err != nil {
+					log.Printf("failed to update miner's owned_tokens: %v", err)
 				}
 
 			case err := <-landFractionalizedSub.Err():
@@ -208,6 +222,49 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 					return
 				}
 				log.Printf("TokensPurchased: LandID=%v, Buyer=%s, Seller=%s, Amount=%v, PricePerToken=%v\n", event.LandId, event.Buyer.Hex(), event.Seller.Hex(), event.Amount, event.PricePerToken)
+
+				landId := int32(event.LandId.Int64())
+				amount := int32(event.Amount.Int64())
+				pricePerToken, _ := event.PricePerToken.Float64()
+
+				updateSalesQuery := `UPDATE sales SET quantity = quantity - ? WHERE seller_id = ?;`
+				_, err = db.ExecContext(ctx, updateSalesQuery, amount, event.Seller.Hex())
+				if err != nil {
+					log.Printf("failed to update sales table: %v", err)
+				}
+
+				updateBuyerOwnedTokens := `
+								INSERT INTO owned_tokens (user_public_key, land_token_id, quantity)
+								VALUES (?, ?, ?)
+								ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity);
+				`
+				_, err = db.ExecContext(ctx, updateBuyerOwnedTokens, event.Buyer.Hex(), landId, amount)
+				if err != nil {
+					log.Printf("failed to update buyer owned_tokens: %v", err)
+				}
+
+				updateSellerOwnedTokens := `
+								UPDATE owned_tokens SET quantity = quantity - ? WHERE user_public_key = ? AND land_token_id = ?;
+				`
+				_, err = db.ExecContext(ctx, updateSellerOwnedTokens, amount, event.Seller.Hex(), landId)
+				if err != nil {
+					log.Printf("failed to update seller owned_tokens: %v", err)
+				}
+
+				insertTransactedTokens := `
+					INSERT INTO transacted_tokens (land_token_id, quantity, price, from_user, to_user)
+					VALUES (?, ?, ?, ?, ?);
+				`
+				_, err = db.ExecContext(ctx, insertTransactedTokens, landId, amount, pricePerToken, event.Seller.Hex(), event.Buyer.Hex())
+				if err != nil {
+					log.Printf("failed to insert transacted tokens: %v", err)
+				}
+
+				deleteSaleIfZero := `DELETE FROM sales WHERE seller_id = ? AND quantity = 0;`
+				_, err = db.ExecContext(ctx, deleteSaleIfZero, event.Seller.Hex())
+				if err != nil {
+					log.Printf("failed to delete sale if quantity is zero: %v", err)
+				}
 
 				// TODO: Handle the purchase logic (e.g., updating ownership, history etc.)
 

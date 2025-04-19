@@ -13,18 +13,6 @@ const BuyTokens = ({ contractAddress, signer }) => {
       pricePerToken: 100,
     };
 
-    try {
-      const approvalTx = await contract.setApprovalForAll(
-        contractAddress,
-        true
-      );
-      const approvalReceipt = await approvalTx.wait();
-      console.log("Approval confirmed:", approvalReceipt);
-    } catch (approvalError) {
-      console.error("Error during approval:", approvalError);
-      return; // Stop if approval fails
-    }
-
     const tx = await contract.purchaseTokens(1, order, {
       value: order.amount * order.pricePerToken,
     });

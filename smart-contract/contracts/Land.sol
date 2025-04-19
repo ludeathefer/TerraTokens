@@ -89,6 +89,10 @@ contract Land is ERC1155, Ownable {
             activeSaleListings[msg.sender].amount == 0,
             "Already has an active listing"
         );
+        require(
+            isApprovedForAll(msg.sender, address(this)),
+            "Contract must be approved to transfer tokens"
+        );
 
         activeSaleListings[msg.sender] = SaleOrder({
             seller: msg.sender,
@@ -181,13 +185,17 @@ contract Land is ERC1155, Ownable {
             balanceOf(seller, landId) >= order.amount,
             "Seller has insufficient balance"
         );
+        require(
+            isApprovedForAll(seller, address(this)),
+            "Seller has not approved contract for transfers"
+        );
 
         totalPrice = order.amount * order.pricePerToken;
         require(msg.value >= totalPrice, "Insufficient payment");
 
         // Process transfers
         // Transfer tokens from seller to buyer
-        safeTransferFrom(seller, msg.sender, landId, order.amount, "");
+        _safeTransferFrom(seller, msg.sender, landId, order.amount, "");
 
         // Update or remove the listing
         if (listing.amount == order.amount) {

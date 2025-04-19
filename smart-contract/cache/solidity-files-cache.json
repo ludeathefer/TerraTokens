@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/run/media/praharsha/HDD/Code/Git/TerraTokens/smart-contract/contracts/Land.sol": {
-      "lastModificationDate": 1745024500961,
-      "contentHash": "d81030bc13a7f616a1f95a3f167eca58",
+      "lastModificationDate": 1745038732289,
+      "contentHash": "9533589b8b77f91979fd752b9bf9dbd8",
       "sourceName": "contracts/Land.sol",
       "solcConfig": {
         "version": "0.8.28",
