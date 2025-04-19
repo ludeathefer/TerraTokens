@@ -19,11 +19,18 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const REGISTER = gql`
-  mutation CreateUser($input: CreateUserInput!) {
+  mutation UserRegister($input: CreateUserInput!) {
     createUser(input: $input) {
-      id
       publicKey
       username
+      phone
+      email
+      createdAt
+      updatedAt
+      roles {
+        name
+        description
+      }
     }
   }
 `;

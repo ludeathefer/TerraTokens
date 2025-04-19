@@ -98,7 +98,7 @@ const MapComponent = ({ city, latLang, height }) => {
         center={latLang}
         zoom={zoom}
         scrollWheelZoom={true}
-        className={`h-[${height}px] w-full`}
+        className={`h-80 w-full`}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
