@@ -137,11 +137,10 @@ func AutoMigrate(db *sql.DB) error {
 	// Create sales table
 	querySales := `
 	CREATE TABLE IF NOT EXISTS sales (
-					id SERIAL PRIMARY KEY,
 					land_token_id INT NOT NULL,
 					quantity INT NOT NULL,
 					price DOUBLE PRECISION NOT NULL,
-					seller_id VARCHAR(130) NOT NULL UNIQUE,
+					seller_id VARCHAR(130) PRIMARY KEY NOT NULL,
 					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE,
 					FOREIGN KEY (seller_id) REFERENCES users(public_key) ON DELETE CASCADE

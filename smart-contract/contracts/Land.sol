@@ -154,6 +154,10 @@ contract Land is ERC1155, Ownable {
             listing.seller == msg.sender,
             "Only the seller can update the listing"
         );
+        require(
+            isApprovedForAll(msg.sender, address(this)),
+            "Contract must be approved to transfer tokens"
+        );
 
         listing.amount = amount;
         listing.pricePerToken = pricePerToken;
