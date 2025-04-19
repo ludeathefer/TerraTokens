@@ -290,6 +290,10 @@ const LandDetail = () => {
     },
   });
 
+  const filteredSales = salesData?.sales.filter(
+    (sale) => sale.landToken.landId === Number(landId)
+  );
+
   const {
     loading: simLandLoading,
     error: simLandError,
@@ -715,7 +719,7 @@ const LandDetail = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {salesData?.sales.map((token, index) => (
+                          {filteredSales?.map((token, index) => (
                             <TableRow
                               key={index}
                               onClick={() => handleRowClick(token, index)}

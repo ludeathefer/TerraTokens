@@ -256,10 +256,10 @@ const Dashboard = () => {
                       Profit Amount:
                     </Label>
                     <Label className="text-sm font-semibold text-[#0c8ce9]">
-                      Rs. 20,000
+                      {totalPortfolioValue ? "Rs. 20,000" : 0}
                     </Label>
                     <Label className="text-xs font-semibold text-[#179413]">
-                      +36%
+                      {totalPortfolioValue ? "+36%" : 0}
                     </Label>
                   </div>
                 </div>
@@ -285,13 +285,18 @@ const Dashboard = () => {
                     <Label className="font-semibold text-[#7d7d7d] text-xs">
                       Best Profit Land
                     </Label>
-                    <LandInfo
-                      tokenCode={`${filteredTokens?.ownedTokens?.[0]?.landToken.name}-${filteredTokens?.ownedTokens?.[0]?.landToken.landId}`}
-                      propertyLocation={`${filteredTokens?.ownedTokens?.[0]?.landToken.distanceFromLandmark} from ${filteredTokens?.ownedTokens?.[0]?.landToken.landmark}`}
-                      propertyType={
-                        filteredTokens?.ownedTokens?.[0]?.landToken.propertyType
-                      }
-                    />
+                    {totalPortfolioValue ? (
+                      <LandInfo
+                        tokenCode={`${filteredTokens?.ownedTokens?.[0]?.landToken.name}-${filteredTokens?.ownedTokens?.[0]?.landToken.landId}`}
+                        propertyLocation={`${filteredTokens?.ownedTokens?.[0]?.landToken.distanceFromLandmark} from ${filteredTokens?.ownedTokens?.[0]?.landToken.landmark}`}
+                        propertyType={
+                          filteredTokens?.ownedTokens?.[0]?.landToken
+                            .propertyType
+                        }
+                      />
+                    ) : (
+                      <></>
+                    )}
                   </div>
                 </div>
               </div>
