@@ -151,7 +151,7 @@ type Mutation {
     @auth(requires: ["admin"])
   updateLandToken(publicKey: String!, input: CreateLandTokenInput!): LandToken!
     @auth(requires: ["admin"])
-  addPriceToLandToken(publicKey: String!, input: CreatePriceInput!): LandToken!
+  addPriceToLandToken(landId: Int!, input: CreatePriceInput!): LandToken!
     @auth(requires: ["admin"])
   # buyToken(input: BuyTokenInput!): TransactedToken! @auth
   # createSale(input: CreateSaleInput!): Sale! @auth

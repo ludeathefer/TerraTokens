@@ -74,7 +74,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddPriceToLandToken func(childComplexity int, publicKey string, input model.CreatePriceInput) int
+		AddPriceToLandToken func(childComplexity int, landID int32, input model.CreatePriceInput) int
 		AddToWatchlist      func(childComplexity int, publicKey string) int
 		CreateLandToken     func(childComplexity int, input model.CreateLandTokenInput) int
 		CreateUser          func(childComplexity int, input model.CreateUserInput) int
@@ -157,7 +157,7 @@ type MutationResolver interface {
 	DeleteUser(ctx context.Context, publicKey string) (bool, error)
 	CreateLandToken(ctx context.Context, input model.CreateLandTokenInput) (*model.LandToken, error)
 	UpdateLandToken(ctx context.Context, publicKey string, input model.CreateLandTokenInput) (*model.LandToken, error)
-	AddPriceToLandToken(ctx context.Context, publicKey string, input model.CreatePriceInput) (*model.LandToken, error)
+	AddPriceToLandToken(ctx context.Context, landID int32, input model.CreatePriceInput) (*model.LandToken, error)
 	AddToWatchlist(ctx context.Context, publicKey string) (*model.User, error)
 	RemoveFromWatchlist(ctx context.Context, publicKey string) (*model.User, error)
 }
@@ -328,7 +328,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddPriceToLandToken(childComplexity, args["publicKey"].(string), args["input"].(model.CreatePriceInput)), true
+		return e.complexity.Mutation.AddPriceToLandToken(childComplexity, args["landId"].(int32), args["input"].(model.CreatePriceInput)), true
 
 	case "Mutation.addToWatchlist":
 		if e.complexity.Mutation.AddToWatchlist == nil {
@@ -911,11 +911,11 @@ func (ec *executionContext) dir_auth_argsRequires(
 func (ec *executionContext) field_Mutation_addPriceToLandToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_addPriceToLandToken_argsPublicKey(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_addPriceToLandToken_argsLandID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["publicKey"] = arg0
+	args["landId"] = arg0
 	arg1, err := ec.field_Mutation_addPriceToLandToken_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -923,16 +923,16 @@ func (ec *executionContext) field_Mutation_addPriceToLandToken_args(ctx context.
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_addPriceToLandToken_argsPublicKey(
+func (ec *executionContext) field_Mutation_addPriceToLandToken_argsLandID(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
-	if tmp, ok := rawArgs["publicKey"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
+) (int32, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("landId"))
+	if tmp, ok := rawArgs["landId"]; ok {
+		return ec.unmarshalNInt2int32(ctx, tmp)
 	}
 
-	var zeroVal string
+	var zeroVal int32
 	return zeroVal, nil
 }
 
@@ -2705,7 +2705,7 @@ func (ec *executionContext) _Mutation_addPriceToLandToken(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().AddPriceToLandToken(rctx, fc.Args["publicKey"].(string), fc.Args["input"].(model.CreatePriceInput))
+			return ec.resolvers.Mutation().AddPriceToLandToken(rctx, fc.Args["landId"].(int32), fc.Args["input"].(model.CreatePriceInput))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {

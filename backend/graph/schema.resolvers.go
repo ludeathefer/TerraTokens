@@ -239,8 +239,39 @@ func (r *mutationResolver) UpdateLandToken(ctx context.Context, publicKey string
 }
 
 // AddPriceToLandToken is the resolver for the addPriceToLandToken field.
-func (r *mutationResolver) AddPriceToLandToken(ctx context.Context, publicKey string, input model.CreatePriceInput) (*model.LandToken, error) {
-	panic(fmt.Errorf("not implemented: AddPriceToLandToken - addPriceToLandToken"))
+func (r *mutationResolver) AddPriceToLandToken(ctx context.Context, landID int32, input model.CreatePriceInput) (*model.LandToken, error) {
+
+	db := r.Database
+
+	// Check if the land token exists
+	var exists bool
+	err := db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM land_tokens WHERE land_id = ?)", landID).Scan(&exists)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if land token exists: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("land token with ID %d not found", landID)
+	}
+
+	// Insert the new price
+	_, err = db.ExecContext(ctx, "INSERT INTO prices (land_token_id, value) VALUES (?, ?)", landID, input.Value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert new price: %w", err)
+	}
+
+	// Update the current price in the land_tokens table
+	_, err = db.ExecContext(ctx, "UPDATE land_tokens SET current_price = ?, updated_at = ? WHERE land_id = ?", input.Value, time.Now(), landID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update current price of land token: %w", err)
+	}
+
+	// Fetch the updated land token with its prices
+	landToken, err := r.Query().LandToken(ctx, landID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch updated land token: %w", err)
+	}
+
+	return landToken, nil
 }
 
 // AddToWatchlist is the resolver for the addToWatchlist field.
@@ -719,41 +750,6 @@ func (r *queryResolver) OwnedTokens(ctx context.Context) ([]*model.OwnedToken, e
 	return ownedTokens, nil
 }
 
-func (r *queryResolver) fetchPricesForLandToken(ctx context.Context, db *sql.DB, landTokenID int32) ([]*model.Price, error) {
-	query := `
-        SELECT id, date, value
-        FROM prices
-        WHERE land_token_id = ?
-        ORDER BY date DESC
-    `
-	rows, err := db.QueryContext(ctx, query, landTokenID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query prices for land token %d: %w", landTokenID, err)
-	}
-	defer rows.Close()
-
-	var prices []*model.Price
-	for rows.Next() {
-		price := &model.Price{}
-		var id int
-		var date time.Time
-		var value float64
-		if err := rows.Scan(&id, &date, &value); err != nil {
-			return nil, fmt.Errorf("failed to scan price for land token %d: %w", landTokenID, err)
-		}
-		price.ID = id
-		price.Date = date
-		price.Value = value
-		prices = append(prices, price)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating prices rows for land token %d: %w", landTokenID, err)
-	}
-
-	return prices, nil
-}
-
 // TransactedTokens is the resolver for the transactedTokens field.
 func (r *queryResolver) TransactedTokens(ctx context.Context) ([]*model.TransactedToken, error) {
 	db := r.Database
@@ -830,6 +826,49 @@ func (r *queryResolver) TransactedTokens(ctx context.Context) ([]*model.Transact
 	return transactedTokens, nil
 }
 
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+// Query returns QueryResolver implementation.
+func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+
+type mutationResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
+
+func (r *queryResolver) fetchPricesForLandToken(ctx context.Context, db *sql.DB, landTokenID int32) ([]*model.Price, error) {
+	query := `
+        SELECT id, date, value
+        FROM prices
+        WHERE land_token_id = ?
+        ORDER BY date DESC
+    `
+	rows, err := db.QueryContext(ctx, query, landTokenID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query prices for land token %d: %w", landTokenID, err)
+	}
+	defer rows.Close()
+
+	var prices []*model.Price
+	for rows.Next() {
+		price := &model.Price{}
+		var id int
+		var date time.Time
+		var value float64
+		if err := rows.Scan(&id, &date, &value); err != nil {
+			return nil, fmt.Errorf("failed to scan price for land token %d: %w", landTokenID, err)
+		}
+		price.ID = id
+		price.Date = date
+		price.Value = value
+		prices = append(prices, price)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating prices rows for land token %d: %w", landTokenID, err)
+	}
+
+	return prices, nil
+}
 func (r *queryResolver) fetchUserByPublicKey(ctx context.Context, db *sql.DB, publicKey string) (*model.User, error) {
 	query := `
         SELECT public_key, username, phone, email, created_at, updated_at
@@ -856,7 +895,6 @@ func (r *queryResolver) fetchUserByPublicKey(ctx context.Context, db *sql.DB, pu
 
 	return user, nil
 }
-
 func (r *queryResolver) fetchRolesForUser(ctx context.Context, db *sql.DB, publicKey string) ([]*model.Role, error) {
 	query := `
         SELECT r.id, r.name, r.description
@@ -886,12 +924,3 @@ func (r *queryResolver) fetchRolesForUser(ctx context.Context, db *sql.DB, publi
 
 	return roles, nil
 }
-
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-// Query returns QueryResolver implementation.
-func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
-
-type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
