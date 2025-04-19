@@ -24,6 +24,7 @@ contract Land is ERC1155, Ownable {
 
     event LandFractionalized(
         uint256 indexed landId,
+        string name,
         uint256 numberOfFractions,
         string metadataURI
     );
@@ -58,8 +59,9 @@ contract Land is ERC1155, Ownable {
     );
 
     function fractionalizeLand(
-        string memory metadataURI,
-        uint256 numberOfFractions
+        string memory name,
+        uint256 numberOfFractions,
+        string memory metadataURI
     ) public onlyOwner {
         landIdCounter++;
         uint256 landId = landIdCounter;
@@ -69,7 +71,7 @@ contract Land is ERC1155, Ownable {
         totalFractions[landId] = numberOfFractions;
         isFractionalized[landId] = true;
 
-        emit LandFractionalized(landId, numberOfFractions, metadataURI);
+        emit LandFractionalized(landId, name, numberOfFractions, metadataURI);
     }
 
     function listTokensForSale(
@@ -187,9 +189,6 @@ contract Land is ERC1155, Ownable {
         // Transfer tokens from seller to buyer
         safeTransferFrom(seller, msg.sender, landId, order.amount, "");
 
-        // Transfer payment to seller
-        payable(seller).transfer(totalPrice);
-
         // Update or remove the listing
         if (listing.amount == order.amount) {
             // If entire listing is purchased, remove it
@@ -198,6 +197,9 @@ contract Land is ERC1155, Ownable {
             // If partial purchase, update the listing amount
             listing.amount -= order.amount;
         }
+
+        // Transfer payment to seller
+        payable(seller).transfer(totalPrice);
 
         emit TokensPurchased(
             landId,

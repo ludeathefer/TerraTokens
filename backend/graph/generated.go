@@ -78,7 +78,6 @@ type ComplexityRoot struct {
 		AddToWatchlist      func(childComplexity int, publicKey string) int
 		BuyToken            func(childComplexity int, input model.BuyTokenInput) int
 		CreateLandToken     func(childComplexity int, input model.CreateLandTokenInput) int
-		CreateSale          func(childComplexity int, input model.CreateSaleInput) int
 		CreateUser          func(childComplexity int, input model.CreateUserInput) int
 		DeleteSale          func(childComplexity int, id int) int
 		DeleteUser          func(childComplexity int, publicKey string) int
@@ -101,7 +100,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		LandToken  func(childComplexity int, publicKey string) int
+		LandToken  func(childComplexity int, landID int32) int
 		LandTokens func(childComplexity int) int
 		Login      func(childComplexity int, publicKey string) int
 		Sale       func(childComplexity int, id int) int
@@ -159,7 +158,6 @@ type MutationResolver interface {
 	UpdateLandToken(ctx context.Context, publicKey string, input model.CreateLandTokenInput) (*model.LandToken, error)
 	AddPriceToLandToken(ctx context.Context, publicKey string, input model.CreatePriceInput) (*model.LandToken, error)
 	BuyToken(ctx context.Context, input model.BuyTokenInput) (*model.TransactedToken, error)
-	CreateSale(ctx context.Context, input model.CreateSaleInput) (*model.Sale, error)
 	UpdateSale(ctx context.Context, id int, input model.UpdateSaleInput) (*model.Sale, error)
 	DeleteSale(ctx context.Context, id int) (bool, error)
 	AddToWatchlist(ctx context.Context, publicKey string) (*model.User, error)
@@ -170,7 +168,7 @@ type QueryResolver interface {
 	User(ctx context.Context, publicKey string) (*model.User, error)
 	Login(ctx context.Context, publicKey string) (*model.LoginResponse, error)
 	LandTokens(ctx context.Context) ([]*model.LandToken, error)
-	LandToken(ctx context.Context, publicKey string) (*model.LandToken, error)
+	LandToken(ctx context.Context, landID int32) (*model.LandToken, error)
 	Sales(ctx context.Context) ([]*model.Sale, error)
 	Sale(ctx context.Context, id int) (*model.Sale, error)
 }
@@ -368,18 +366,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateLandToken(childComplexity, args["input"].(model.CreateLandTokenInput)), true
 
-	case "Mutation.createSale":
-		if e.complexity.Mutation.CreateSale == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createSale_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateSale(childComplexity, args["input"].(model.CreateSaleInput)), true
-
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
 			break
@@ -516,7 +502,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.LandToken(childComplexity, args["publicKey"].(string)), true
+		return e.complexity.Query.LandToken(childComplexity, args["landId"].(int32)), true
 
 	case "Query.landTokens":
 		if e.complexity.Query.LandTokens == nil {
@@ -1040,29 +1026,6 @@ func (ec *executionContext) field_Mutation_createLandToken_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_createSale_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_createSale_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_createSale_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.CreateSaleInput, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNCreateSaleInput2githubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐCreateSaleInput(ctx, tmp)
-	}
-
-	var zeroVal model.CreateSaleInput
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1304,23 +1267,23 @@ func (ec *executionContext) field_Query___type_argsName(
 func (ec *executionContext) field_Query_landToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_landToken_argsPublicKey(ctx, rawArgs)
+	arg0, err := ec.field_Query_landToken_argsLandID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["publicKey"] = arg0
+	args["landId"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Query_landToken_argsPublicKey(
+func (ec *executionContext) field_Query_landToken_argsLandID(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("publicKey"))
-	if tmp, ok := rawArgs["publicKey"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
+) (int32, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("landId"))
+	if tmp, ok := rawArgs["landId"]; ok {
+		return ec.unmarshalNInt2int32(ctx, tmp)
 	}
 
-	var zeroVal string
+	var zeroVal int32
 	return zeroVal, nil
 }
 
@@ -3036,102 +2999,6 @@ func (ec *executionContext) fieldContext_Mutation_buyToken(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_createSale(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_createSale(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		directive0 := func(rctx context.Context) (any, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateSale(rctx, fc.Args["input"].(model.CreateSaleInput))
-		}
-
-		directive1 := func(ctx context.Context) (any, error) {
-			requires, err := ec.unmarshalOString2ᚕstringᚄ(ctx, []any{})
-			if err != nil {
-				var zeroVal *model.Sale
-				return zeroVal, err
-			}
-			if ec.directives.Auth == nil {
-				var zeroVal *model.Sale
-				return zeroVal, errors.New("directive auth is not implemented")
-			}
-			return ec.directives.Auth(ctx, nil, directive0, requires)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*model.Sale); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/ludeathfer/TerraTokens/backend/graph/model.Sale`, tmp)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Sale)
-	fc.Result = res
-	return ec.marshalNSale2ᚖgithubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐSale(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_createSale(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Sale_id(ctx, field)
-			case "landToken":
-				return ec.fieldContext_Sale_landToken(ctx, field)
-			case "quantity":
-				return ec.fieldContext_Sale_quantity(ctx, field)
-			case "price":
-				return ec.fieldContext_Sale_price(ctx, field)
-			case "seller":
-				return ec.fieldContext_Sale_seller(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Sale_createdAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Sale", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_createSale_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_updateSale(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_updateSale(ctx, field)
 	if err != nil {
@@ -4201,7 +4068,7 @@ func (ec *executionContext) _Query_landToken(ctx context.Context, field graphql.
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().LandToken(rctx, fc.Args["publicKey"].(string))
+			return ec.resolvers.Query().LandToken(rctx, fc.Args["landId"].(int32))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
@@ -8065,7 +7932,7 @@ func (ec *executionContext) unmarshalInputCreateLandTokenInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "totalTokens", "currentPrice", "propertyType", "propertySize", "propertySizeUnit", "landmark", "distanceFromLandmark", "distanceUnit", "propertyDescription", "latitude", "longitude"}
+	fieldsInOrder := [...]string{"name", "currentPrice", "propertyType", "propertySize", "propertySizeUnit", "landmark", "distanceFromLandmark", "distanceUnit", "propertyDescription", "latitude", "longitude"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8079,13 +7946,6 @@ func (ec *executionContext) unmarshalInputCreateLandTokenInput(ctx context.Conte
 				return it, err
 			}
 			it.Name = data
-		case "totalTokens":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokens"))
-			data, err := ec.unmarshalNInt2int32(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TotalTokens = data
 		case "currentPrice":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currentPrice"))
 			data, err := ec.unmarshalNFloat2float64(ctx, v)
@@ -8597,13 +8457,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "buyToken":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_buyToken(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "createSale":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createSale(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -9575,11 +9428,6 @@ func (ec *executionContext) unmarshalNCreateLandTokenInput2githubᚗcomᚋludeat
 
 func (ec *executionContext) unmarshalNCreatePriceInput2githubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐCreatePriceInput(ctx context.Context, v any) (model.CreatePriceInput, error) {
 	res, err := ec.unmarshalInputCreatePriceInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNCreateSaleInput2githubᚗcomᚋludeathferᚋTerraTokensᚋbackendᚋgraphᚋmodelᚐCreateSaleInput(ctx context.Context, v any) (model.CreateSaleInput, error) {
-	res, err := ec.unmarshalInputCreateSaleInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

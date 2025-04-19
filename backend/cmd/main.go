@@ -74,10 +74,11 @@ func main() {
 		log.Fatalf("Failed to automigrate models: %v", err)
 	}
 
-	blockchainClient, err := blockchain.NewConn(cfg.Blockchain)
+	blockchainClient, err := blockchain.NewConn(cfg.Blockchain, database)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+	blockchain.ListenToContractEvents(blockchainClient)
 
 	r := gin.Default()
 

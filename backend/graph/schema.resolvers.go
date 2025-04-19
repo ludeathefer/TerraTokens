@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -34,7 +35,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 	// Insert the user
 	query := `
 		INSERT INTO users (public_key, username, phone, email)
-		VALUES (?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?)
 	`
 	_, err = tx.ExecContext(ctx, query, input.PublicKey, input.Username, input.Phone, input.Email)
 	if err != nil {
@@ -50,7 +51,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 	}
 
 	// Assign the 'user' role to the new user
-	query = `INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)`
+	query = `INSERT INTO user_roles (user_public_key, role_id) VALUES (?, ?)`
 	_, err = tx.ExecContext(ctx, query, input.PublicKey, role.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assign user role: %w", err)
@@ -161,7 +162,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, publicKey string, inp
 func (r *mutationResolver) DeleteUser(ctx context.Context, publicKey string) (bool, error) {
 	db := r.Database
 
-	query := `DELETE FROM users WHERE id = ?`
+	query := `DELETE FROM users WHERE public_key = ?`
 	result, err := db.ExecContext(ctx, query, publicKey)
 	if err != nil {
 		return false, fmt.Errorf("failed to delete user: %w", err)
@@ -181,64 +182,38 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, publicKey string) (bo
 
 // CreateLandToken is the resolver for the createLandToken field.
 func (r *mutationResolver) CreateLandToken(ctx context.Context, input model.CreateLandTokenInput) (*model.LandToken, error) {
-	// db := r.Database
-	// bcc := r.BlockchainClient
+	db := r.Database
 
-	// transactor, err := blockchain.CreateTransactor(ctx, bcc.Client, privateKey)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed creating transactor: %v", err)
-	// }
+	query := `
+	UPDATE land_tokens
+	SET
+		current_price = ?,
+		property_type = ?,
+		property_size = ?,
+		property_size_unit = ?,
+		landmark = ?,
+		distance_from_landmark = ?,
+		distance_unit = ?,
+		property_description = ?,
+		latitude = ?,
+		longitude = ?
+	WHERE
+    	name = ?;
+		`
+	_, err := db.ExecContext(ctx, query,
+		input.CurrentPrice,
+		input.PropertyType, input.PropertySize, input.PropertySizeUnit, input.Landmark,
+		input.DistanceFromLandmark, input.DistanceUnit, input.PropertyDescription,
+		input.Latitude, input.Longitude, input.Name,
+	)
 
-	// tx, err := bcc.Land.FractionalizeLand(transactor, "", big.NewInt(int64(input.TotalTokens)))
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed sending transaction: %v", err)
-	// }
-
-	// log.Printf("FractionalizeLand Transaction sent: %s", tx.Hash().Hex())
-
-	// userAddress := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	// tx, err = bcc.Land.TransferFractionalTokens(transactor, userAddress, big.NewInt(1), big.NewInt(int64(input.TotalTokens)))
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed transferring tokens: %v", err)
-	// }
-
-	// log.Printf("TransferFractionalTokens Transaction sent: %s", tx.Hash().Hex())
-
-	// eventLog, err := blockchain.WaitForEvent(ctx, bcc, tx.Hash().Hex())
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// landIDBigInt := new(big.Int).SetBytes(eventLog.Topics[1].Bytes())
-	// landID := int32(landIDBigInt.Int64())
-
-	// // Generate new UUID
-
-	// // Insert data into DB
-	// query := `
-	// 		INSERT INTO land_tokens (
-	// 			id, land_id, name, total_tokens, current_price,
-	// 			property_type, property_size, property_size_unit, landmark,
-	// 			distance_from_landmark, distance_unit, property_description,
-	// 			latitude, longitude
-	// 		)
-	// 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-	// 	`
-	// _, err = db.ExecContext(ctx, query,
-	// 	landTokenID, landID, input.Name, input.TotalTokens, input.CurrentPrice,
-	// 	input.PropertyType, input.PropertySize, input.PropertySizeUnit, input.Landmark,
-	// 	input.DistanceFromLandmark, input.DistanceUnit, input.PropertyDescription,
-	// 	input.Latitude, input.Longitude,
-	// )
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed inserting into database: %v", err)
-	// }
+	if err != nil {
+		return nil, fmt.Errorf("failed inserting into database: %v", err)
+	}
 
 	// Construct response object
 	landToken := &model.LandToken{
-		// LandID:               landID,
 		Name:                 input.Name,
-		TotalTokens:          input.TotalTokens,
 		CreatedAt:            time.Now(),
 		UpdatedAt:            time.Now(),
 		CurrentPrice:         input.CurrentPrice,
@@ -269,11 +244,6 @@ func (r *mutationResolver) AddPriceToLandToken(ctx context.Context, publicKey st
 // BuyToken is the resolver for the buyToken field.
 func (r *mutationResolver) BuyToken(ctx context.Context, input model.BuyTokenInput) (*model.TransactedToken, error) {
 	panic(fmt.Errorf("not implemented: BuyToken - buyToken"))
-}
-
-// CreateSale is the resolver for the createSale field.
-func (r *mutationResolver) CreateSale(ctx context.Context, input model.CreateSaleInput) (*model.Sale, error) {
-	panic(fmt.Errorf("not implemented: CreateSale - createSale"))
 }
 
 // UpdateSale is the resolver for the updateSale field.
@@ -315,7 +285,7 @@ func (r *queryResolver) Login(ctx context.Context, publicKey string) (*model.Log
 			u.public_key, u.username, u.phone, u.email, u.created_at, u.updated_at,
 			r.id, r.name, r.description
 		FROM users u
-		LEFT JOIN user_roles ur ON u.id = ur.user_id
+		LEFT JOIN user_roles ur ON u.public_key = ur.user_public_key
 		LEFT JOIN roles r ON ur.role_id = r.id
 		WHERE u.public_key = ?
 	`
@@ -357,22 +327,348 @@ func (r *queryResolver) Login(ctx context.Context, publicKey string) (*model.Log
 
 // LandTokens is the resolver for the landTokens field.
 func (r *queryResolver) LandTokens(ctx context.Context) ([]*model.LandToken, error) {
-	panic(fmt.Errorf("not implemented: LandTokens - landTokens"))
+	db := r.Database // Assuming r.Database is your *sql.DB
+
+	query := `
+		SELECT land_id, name, total_tokens, created_at, updated_at, current_price, property_type, property_size, property_size_unit, landmark, distance_from_landmark, distance_unit, property_description, latitude, longitude
+		FROM land_tokens;
+	`
+
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query land tokens: %w", err)
+	}
+	defer rows.Close()
+
+	var landTokens []*model.LandToken
+	for rows.Next() {
+		lt := &model.LandToken{}
+		err := rows.Scan(
+			&lt.LandID, &lt.Name, &lt.TotalTokens, &lt.CreatedAt, &lt.UpdatedAt, &lt.CurrentPrice,
+			&lt.PropertyType, &lt.PropertySize, &lt.PropertySizeUnit, &lt.Landmark, &lt.DistanceFromLandmark,
+			&lt.DistanceUnit, &lt.PropertyDescription, &lt.Latitude, &lt.Longitude,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan land token: %w", err)
+		}
+
+		// Fetch prices for the land token
+		query := `
+					SELECT id, date, value
+					FROM prices
+					WHERE land_token_id = ?;
+	`
+
+		rows, err := db.QueryContext(ctx, query, lt.LandID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query prices: %w", err)
+		}
+		defer rows.Close()
+
+		var prices []*model.Price
+		for rows.Next() {
+			p := &model.Price{}
+			err := rows.Scan(&p.ID, &p.Date, &p.Value)
+			if err != nil {
+				return nil, fmt.Errorf("failed to scan price: %w", err)
+			}
+			prices = append(prices, p)
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, fmt.Errorf("rows error: %w", err)
+		}
+
+		lt.Prices = prices
+
+		landTokens = append(landTokens, lt)
+	}
+	return landTokens, nil
 }
 
 // LandToken is the resolver for the landToken field.
-func (r *queryResolver) LandToken(ctx context.Context, publicKey string) (*model.LandToken, error) {
-	panic(fmt.Errorf("not implemented: LandToken - landToken"))
+func (r *queryResolver) LandToken(ctx context.Context, landID int32) (*model.LandToken, error) {
+	db := r.Database
+
+	query := `
+		SELECT name, total_tokens, created_at, updated_at, current_price, property_type, property_size, property_size_unit, landmark, distance_from_landmark, distance_unit, property_description, latitude, longitude
+		FROM land_tokens
+		WHERE land_id = ?;
+	`
+	row := db.QueryRowContext(ctx, query, landID)
+	lt := &model.LandToken{}
+	err := row.Scan(
+		&lt.Name, &lt.TotalTokens, &lt.CreatedAt, &lt.UpdatedAt, &lt.CurrentPrice,
+		&lt.PropertyType, &lt.PropertySize, &lt.PropertySizeUnit, &lt.Landmark, &lt.DistanceFromLandmark,
+		&lt.DistanceUnit, &lt.PropertyDescription, &lt.Latitude, &lt.Longitude,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("land token not found")
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to scan land token: %w", err)
+	}
+
+	// Fetch prices for the land token
+	query = `
+	SELECT id, date, value
+	FROM prices
+	WHERE land_token_id = ?;
+	`
+	rows, err := db.QueryContext(ctx, query, lt.LandID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query prices: %w", err)
+	}
+	defer rows.Close()
+
+	var prices []*model.Price
+	for rows.Next() {
+		p := &model.Price{}
+		err := rows.Scan(&p.ID, &p.Date, &p.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan price: %w", err)
+		}
+		prices = append(prices, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	lt.Prices = prices
+
+	return lt, nil
 }
 
 // Sales is the resolver for the sales field.
 func (r *queryResolver) Sales(ctx context.Context) ([]*model.Sale, error) {
-	panic(fmt.Errorf("not implemented: Sales - sales"))
+	db := r.Database // Assuming r.Database is your *sql.DB
+
+	query := `
+		SELECT s.id, s.quantity, s.price, s.created_at, s.land_token_id, s.seller_id
+		FROM sales s;
+		`
+
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query sales: %w", err)
+	}
+	defer rows.Close()
+
+	var sales []*model.Sale
+	for rows.Next() {
+		s := &model.Sale{}
+		var landTokenID int32
+		var sellerID string
+		err := rows.Scan(
+			&s.ID, &s.Quantity, &s.Price, &s.CreatedAt, &landTokenID, &sellerID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan sale: %w", err)
+		}
+
+		query := `
+						SELECT land_id, name, total_tokens, created_at, updated_at, current_price, property_type, property_size, property_size_unit, landmark, distance_from_landmark, distance_unit, property_description, latitude, longitude
+						FROM land_tokens
+						WHERE land_id = ?;
+		`
+		row := db.QueryRowContext(ctx, query, landTokenID)
+		lt := &model.LandToken{}
+		err = row.Scan(
+			&lt.LandID, &lt.Name, &lt.TotalTokens, &lt.CreatedAt, &lt.UpdatedAt, &lt.CurrentPrice,
+			&lt.PropertyType, &lt.PropertySize, &lt.PropertySizeUnit, &lt.Landmark, &lt.DistanceFromLandmark,
+			&lt.DistanceUnit, &lt.PropertyDescription, &lt.Latitude, &lt.Longitude,
+		)
+
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("land token not found")
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to scan land token: %w", err)
+		}
+
+		// Fetch prices for the land token
+		query = `
+		SELECT id, date, value
+		FROM prices
+		WHERE land_token_id = ?;
+		`
+
+		rows, err := db.QueryContext(ctx, query, lt.LandID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query prices: %w", err)
+		}
+		defer rows.Close()
+
+		var prices []*model.Price
+		for rows.Next() {
+			p := &model.Price{}
+			err := rows.Scan(&p.ID, &p.Date, &p.Value)
+			if err != nil {
+				return nil, fmt.Errorf("failed to scan price: %w", err)
+			}
+			prices = append(prices, p)
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, fmt.Errorf("rows error: %w", err)
+		}
+
+		lt.Prices = prices
+
+		s.LandToken = lt
+
+		query = `
+			SELECT
+				u.public_key, u.username, u.phone, u.email, u.created_at, u.updated_at,
+				r.id, r.name, r.description
+			FROM users u
+			LEFT JOIN user_roles ur ON u.public_key = ur.user_public_key
+			LEFT JOIN roles r ON ur.role_id = r.id
+			WHERE u.public_key = ?
+		`
+
+		rows, err = db.QueryContext(ctx, query, sellerID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch seller: %w", err)
+		}
+		defer rows.Close()
+
+		var seller *model.User
+
+		for rows.Next() {
+			seller = &model.User{}
+			role := &model.Role{}
+			err := rows.Scan(&seller.PublicKey, &seller.Username, &seller.Email, &seller.Phone, &seller.CreatedAt, &seller.UpdatedAt, &role.ID, &role.Name, &role.Description)
+			if err != nil {
+				return nil, fmt.Errorf("failed to scan seller: %w", err)
+			}
+			seller.Roles = append(seller.Roles, role)
+		}
+
+		if seller == nil {
+			return nil, fmt.Errorf("seller not found")
+		}
+
+		s.Seller = seller
+
+		sales = append(sales, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return sales, nil
 }
 
 // Sale is the resolver for the sale field.
 func (r *queryResolver) Sale(ctx context.Context, id int) (*model.Sale, error) {
-	panic(fmt.Errorf("not implemented: Sale - sale"))
+	db := r.Database
+
+	query := `
+ 		SELECT s.id, s.quantity, s.price, s.created_at, s.land_token_id, s.seller_id
+ 		FROM sales s
+ 		WHERE s.id = ?;
+ 	`
+
+	row := db.QueryRowContext(ctx, query, id)
+	s := &model.Sale{}
+	var landTokenID string
+	var sellerID string
+	err := row.Scan(
+		&s.ID, &s.Quantity, &s.Price, &s.CreatedAt, &landTokenID, &sellerID,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("sale not found")
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to scan sale: %w", err)
+	}
+
+	query = `
+ 		SELECT land_id, name, total_tokens, created_at, updated_at, current_price, property_type, property_size, property_size_unit, landmark, distance_from_landmark, distance_unit, property_description, latitude, longitude
+ 		FROM land_tokens
+ 		WHERE land_id = ?;
+ 	`
+	row = db.QueryRowContext(ctx, query, landTokenID)
+	lt := &model.LandToken{}
+	err = row.Scan(
+		&lt.LandID, &lt.Name, &lt.TotalTokens, &lt.CreatedAt, &lt.UpdatedAt, &lt.CurrentPrice,
+		&lt.PropertyType, &lt.PropertySize, &lt.PropertySizeUnit, &lt.Landmark, &lt.DistanceFromLandmark,
+		&lt.DistanceUnit, &lt.PropertyDescription, &lt.Latitude, &lt.Longitude,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("land token not found")
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to scan land token: %w", err)
+	}
+
+	query = `
+ 	SELECT id, date, value
+ 	FROM prices
+ 	WHERE land_token_id = ?;
+ 	`
+
+	rows, err := db.QueryContext(ctx, query, lt.LandID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query prices: %w", err)
+	}
+	defer rows.Close()
+
+	var prices []*model.Price
+	for rows.Next() {
+		p := &model.Price{}
+		err := rows.Scan(&p.ID, &p.Date, &p.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan price: %w", err)
+		}
+		prices = append(prices, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	lt.Prices = prices
+
+	s.LandToken = lt
+
+	query = `
+ 	SELECT
+ 	u.public_key, u.username, u.phone, u.email, u.created_at, u.updated_at,
+ 	r.id, r.name, r.description
+ 	FROM users u
+ 	LEFT JOIN user_roles ur ON u.public_key = ur.user_public_key
+ 	LEFT JOIN roles r ON ur.role_id = r.id
+ 	WHERE u.public_key = ?
+ 	`
+
+	rows, err = db.QueryContext(ctx, query, sellerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch seller: %w", err)
+	}
+	defer rows.Close()
+
+	var seller *model.User
+
+	for rows.Next() {
+		seller = &model.User{}
+		role := &model.Role{}
+		err := rows.Scan(&seller.PublicKey, &seller.Username, &seller.Email, &seller.Phone, &seller.CreatedAt, &seller.UpdatedAt, &role.ID, &role.Name, &role.Description)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan seller: %w", err)
+		}
+		seller.Roles = append(seller.Roles, role)
+	}
+
+	if seller == nil {
+		return nil, fmt.Errorf("seller not found")
+	}
+
+	s.Seller = seller
+
+	return s, nil
 }
 
 // Mutation returns MutationResolver implementation.

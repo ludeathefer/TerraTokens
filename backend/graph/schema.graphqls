@@ -82,7 +82,6 @@ type User {
 # inputs and responses
 input CreateLandTokenInput {
   name: String!
-  totalTokens: Int!
   currentPrice: Float!
   propertyType: String!
   propertySize: Float!
@@ -140,7 +139,7 @@ type Query {
   user(publicKey: String!): User @auth
   login(publicKey: String!): LoginResponse!
   landTokens: [LandToken!]! @auth
-  landToken(publicKey: String!): LandToken @auth
+  landToken(landId: Int!): LandToken @auth
   sales: [Sale!]! @auth
   sale(id: ID!): Sale @auth
 }
@@ -156,7 +155,7 @@ type Mutation {
   addPriceToLandToken(publicKey: String!, input: CreatePriceInput!): LandToken!
     @auth(requires: ["admin"])
   buyToken(input: BuyTokenInput!): TransactedToken! @auth
-  createSale(input: CreateSaleInput!): Sale! @auth
+  # createSale(input: CreateSaleInput!): Sale! @auth
   updateSale(id: ID!, input: UpdateSaleInput!): Sale! @auth
   deleteSale(id: ID!): Boolean! @auth
   addToWatchlist(publicKey: String!): User @auth

@@ -37,8 +37,7 @@ func AutoMigrate(db *sql.DB) error {
 	// Create users table
 	queryUsers := `
 	CREATE TABLE IF NOT EXISTS users (
-					id CHAR(36) PRIMARY KEY, -- UUID
-					public_key VARCHAR(130) NOT NULL UNIQUE, -- Blockchain public key
+					public_key VARCHAR(130) PRIMARY KEY NOT NULL UNIQUE, -- Blockchain public key
 					username VARCHAR(255) NOT NULL,
 					phone VARCHAR(20) NOT NULL UNIQUE,
 					email VARCHAR(255) UNIQUE NOT NULL,
@@ -67,10 +66,10 @@ func AutoMigrate(db *sql.DB) error {
 	// Create user_roles table (Many-to-Many)
 	queryUserRoles := `
 	CREATE TABLE IF NOT EXISTS user_roles (
-					user_id CHAR(36) NOT NULL,
+					user_public_key VARCHAR(130) NOT NULL,
 					role_id BIGINT UNSIGNED NOT NULL,
-					PRIMARY KEY (user_id, role_id),
-					FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+					PRIMARY KEY (user_public_key, role_id),
+					FOREIGN KEY (user_public_key) REFERENCES users(public_key) ON DELETE CASCADE,
 					FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 	);
 	`
@@ -82,20 +81,19 @@ func AutoMigrate(db *sql.DB) error {
 	// Create land_tokens table
 	queryLandTokens := `
 	CREATE TABLE IF NOT EXISTS land_tokens (
-					id CHAR(36) PRIMARY KEY, -- UUID
-					land_id INT NOT NULL,
-					name VARCHAR(255) NOT NULL,
+					land_id INT PRIMARY KEY NOT NULL,
+					name VARCHAR(255) UNIQUE NOT NULL,
 					total_tokens INT NOT NULL,
-					current_price DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-					property_type VARCHAR(100) NOT NULL,
-					property_size DOUBLE PRECISION NOT NULL,
-					property_size_unit VARCHAR(20) NOT NULL,
-					landmark VARCHAR(255) NOT NULL,
-					distance_from_landmark DOUBLE PRECISION NOT NULL,
-					distance_unit VARCHAR(20) NOT NULL,
+					current_price DOUBLE PRECISION DEFAULT 0.0,
+					property_type VARCHAR(100),
+					property_size DOUBLE PRECISION,
+					property_size_unit VARCHAR(20),
+					landmark VARCHAR(255),
+					distance_from_landmark DOUBLE PRECISION,
+					distance_unit VARCHAR(20),
 					property_description TEXT,
-					latitude VARCHAR(50) NOT NULL,
-					longitude VARCHAR(50) NOT NULL,
+					latitude VARCHAR(50),
+					longitude VARCHAR(50),
 					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 					updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
@@ -109,10 +107,10 @@ func AutoMigrate(db *sql.DB) error {
 	queryPrices := `
 	CREATE TABLE IF NOT EXISTS prices (
 					id SERIAL PRIMARY KEY,
-					land_token_id CHAR(36) NOT NULL,
+					land_token_id INT NOT NULL,
 					date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 					value DOUBLE PRECISION NOT NULL,
-					FOREIGN KEY (land_token_id) REFERENCES land_tokens(id) ON DELETE CASCADE
+					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE
 	);
 	`
 	_, err = db.Exec(queryPrices)
@@ -124,11 +122,11 @@ func AutoMigrate(db *sql.DB) error {
 	queryOwnedTokens := `
 	CREATE TABLE IF NOT EXISTS owned_tokens (
 					id SERIAL PRIMARY KEY,
-					user_id CHAR(36) NOT NULL,
-					land_token_id CHAR(36) NOT NULL,
+					user_public_key VARCHAR(130) NOT NULL,
+					land_token_id INT NOT NULL,
 					quantity INT NOT NULL,
-					FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-					FOREIGN KEY (land_token_id) REFERENCES land_tokens(id) ON DELETE CASCADE
+					FOREIGN KEY (user_public_key) REFERENCES users(public_key) ON DELETE CASCADE,
+					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE
 	);
 	`
 	_, err = db.Exec(queryOwnedTokens)
@@ -140,13 +138,13 @@ func AutoMigrate(db *sql.DB) error {
 	querySales := `
 	CREATE TABLE IF NOT EXISTS sales (
 					id SERIAL PRIMARY KEY,
-					land_token_id CHAR(36) NOT NULL,
+					land_token_id INT NOT NULL,
 					quantity INT NOT NULL,
 					price DOUBLE PRECISION NOT NULL,
-					seller_id CHAR(36) NOT NULL,
+					seller_id VARCHAR(130) NOT NULL,
 					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-					FOREIGN KEY (land_token_id) REFERENCES land_tokens(id) ON DELETE CASCADE,
-					FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
+					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE,
+					FOREIGN KEY (seller_id) REFERENCES users(public_key) ON DELETE CASCADE
 	);
 	`
 	_, err = db.Exec(querySales)
@@ -158,15 +156,15 @@ func AutoMigrate(db *sql.DB) error {
 	queryTransactedTokens := `
 	CREATE TABLE IF NOT EXISTS transacted_tokens (
 					id SERIAL PRIMARY KEY,
-					land_token_id CHAR(36) NOT NULL,
+					land_token_id INT NOT NULL,
 					quantity INT NOT NULL,
 					price DOUBLE PRECISION NOT NULL,
-					from_user CHAR(36),
-					to_user CHAR(36),
+					from_user VARCHAR(130),
+					to_user VARCHAR(130),
 					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-					FOREIGN KEY (land_token_id) REFERENCES land_tokens(id) ON DELETE CASCADE,
-					FOREIGN KEY (from_user) REFERENCES users(id) ON DELETE SET NULL,
-					FOREIGN KEY (to_user) REFERENCES users(id) ON DELETE SET NULL
+					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE,
+					FOREIGN KEY (from_user) REFERENCES users(public_key) ON DELETE SET NULL,
+					FOREIGN KEY (to_user) REFERENCES users(public_key) ON DELETE SET NULL
 	);
 	`
 	_, err = db.Exec(queryTransactedTokens)
@@ -177,11 +175,11 @@ func AutoMigrate(db *sql.DB) error {
 	// Create watchlist table (Users watch specific Land Tokens)
 	queryWatchlist := `
 	CREATE TABLE IF NOT EXISTS watchlist (
-					user_id CHAR(36) NOT NULL,
-					land_token_id CHAR(36) NOT NULL,
-					PRIMARY KEY (user_id, land_token_id),
-					FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-					FOREIGN KEY (land_token_id) REFERENCES land_tokens(id) ON DELETE CASCADE
+					user_public_key VARCHAR(130) NOT NULL,
+					land_token_id INT NOT NULL,
+					PRIMARY KEY (user_public_key, land_token_id),
+					FOREIGN KEY (user_public_key) REFERENCES users(public_key) ON DELETE CASCADE,
+					FOREIGN KEY (land_token_id) REFERENCES land_tokens(land_id) ON DELETE CASCADE
 	);
 	`
 	_, err = db.Exec(queryWatchlist)

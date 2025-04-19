@@ -13,7 +13,6 @@ type BuyTokenInput struct {
 
 type CreateLandTokenInput struct {
 	Name                 string  `json:"name"`
-	TotalTokens          int32   `json:"totalTokens"`
 	CurrentPrice         float64 `json:"currentPrice"`
 	PropertyType         string  `json:"propertyType"`
 	PropertySize         float64 `json:"propertySize"`

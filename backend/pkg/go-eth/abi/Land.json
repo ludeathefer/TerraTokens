@@ -164,6 +164,12 @@
       },
       {
         "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "numberOfFractions",
         "type": "uint256"
@@ -529,13 +535,18 @@
     "inputs": [
       {
         "internalType": "string",
-        "name": "metadataURI",
+        "name": "name",
         "type": "string"
       },
       {
         "internalType": "uint256",
         "name": "numberOfFractions",
         "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "metadataURI",
+        "type": "string"
       }
     ],
     "name": "fractionalizeLand",
@@ -665,9 +676,9 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct Land.SaleOrder[]",
-        "name": "orders",
-        "type": "tuple[]"
+        "internalType": "struct Land.SaleOrder",
+        "name": "order",
+        "type": "tuple"
       }
     ],
     "name": "purchaseTokens",
