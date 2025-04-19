@@ -1,4 +1,4 @@
-[{
+export const contractABI = [{
   "inputs": [
     {
       "internalType": "address",

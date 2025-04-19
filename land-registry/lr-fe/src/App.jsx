@@ -1,43 +1,62 @@
+import { ethers } from "ethers";
 import React, { useEffect, useState } from "react";
-// import { ethers } from "ethers";
-// import { contractABI } from "../contractABI";
+import contractABI from "../contractABI";
+import { useLazyQuery, useMutation, gql } from "@apollo/client";
 
+const contractAddress = `0x5FbDB2315678afecb367f032d93F642f64180aa3`;
+
+const USER_LOGIN = gql`
+  query UserLogin($publicKey: String!) {
+    login(publicKey: $publicKey) {
+      token
+      User {
+        publicKey
+        username
+        phone
+        email
+        roles {
+          name
+        }
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+const CREATE_LAND_TOKEN = gql`
+  mutation CreateLandToken($input: CreateLandTokenInput!) {
+    createLandToken(input: $input) {
+      name
+      currentPrice
+      propertyType
+      propertySize
+      propertySizeUnit
+      landmark
+      distanceFromLandmark
+      distanceUnit
+      propertyDescription
+      latitude
+      longitude
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+async function connectWallet() {
+  if (!window.ethereum) throw new Error("MetaMask not found");
+
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+
+  const signer = await provider.getSigner();
+  // console.log(signer);
+  const userAddress = await signer.getAddress();
+
+  return { provider, signer, userAddress };
+}
 const DataTable = ({ data, fractionalizeLand }) => {
   const [status, setStatus] = useState("");
-
-  // Function to log plot details
-  const logPlotDetails = async (
-    price,
-    city,
-    ward,
-    streetNumber,
-    plotNumber,
-    landClass
-  ) => {
-    try {
-      const response = await fetch("/log-plot-number", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          price,
-          city,
-          ward,
-          streetNumber,
-          plotNumber,
-          landClass,
-        }),
-      });
-
-      const result = await response.json();
-      console.log(result.message);
-      setStatus(result.message); // Optionally update status with response message
-    } catch (error) {
-      console.error("Error logging plot details:", error);
-      setStatus("Error logging plot details.");
-    }
-  };
 
   return (
     <div style={{ padding: "20px", backgroundColor: "#f4f4f4" }}>
@@ -60,7 +79,7 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              Seller
+              Name
             </th>
             <th
               style={{
@@ -70,7 +89,7 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              Buyer
+              Property Type
             </th>
             <th
               style={{
@@ -80,7 +99,7 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              Price
+              Current Price
             </th>
             <th
               style={{
@@ -90,7 +109,7 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              City
+              Landmark
             </th>
             <th
               style={{
@@ -100,7 +119,7 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              Ward
+              Distance From Landmark
             </th>
             <th
               style={{
@@ -110,7 +129,7 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              Street Number
+              Property Size
             </th>
             <th
               style={{
@@ -120,7 +139,7 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              Plot Number
+              Property Size Unit
             </th>
             <th
               style={{
@@ -130,7 +149,27 @@ const DataTable = ({ data, fractionalizeLand }) => {
                 color: "white",
               }}
             >
-              Land Class
+              Property Description
+            </th>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "left",
+                backgroundColor: "#4CAF50",
+                color: "white",
+              }}
+            >
+              Latitude
+            </th>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "left",
+                backgroundColor: "#4CAF50",
+                color: "white",
+              }}
+            >
+              Longitude
             </th>
             <th
               style={{
@@ -146,44 +185,41 @@ const DataTable = ({ data, fractionalizeLand }) => {
         </thead>
         <tbody>
           {data.map((item) => (
-            <tr key={item.plot_number}>
+            <tr key={item.name}>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.seller}
+                {item.name}
               </td>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.buyer}
+                {item.propertyType}
               </td>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.price}
+                {item.currentPrice}
               </td>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.city}
+                {item.landmark}
               </td>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.ward}
+                {item.distanceFromLandmark}
               </td>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.street_number}
+                {item.propertySize}
               </td>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.plot_number}
+                {item.propertySizeUnit}
               </td>
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
-                {item.land_class}
+                {item.propertyDescription}
               </td>
-              {/* Button to log plot details */}
+              <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
+                {item.latitude}
+              </td>
+              <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
+                {item.longitude}
+              </td>
+              {/* Button to log details of the item */}
               <td style={{ padding: "12px", borderBottom: "1px solid #000" }}>
                 <button
-                  onClick={() =>
-                    fractionalizeLand(
-                      item.price,
-                      item.city,
-                      item.ward,
-                      item.street_number,
-                      item.plot_number,
-                      item.land_class
-                    )
-                  }
+                  onClick={() => fractionalizeLand(item.name)}
                   style={{
                     backgroundColor: "#008CBA",
                     borderRadius: "5px",
@@ -205,33 +241,34 @@ const DataTable = ({ data, fractionalizeLand }) => {
   );
 };
 
-// Replace with your smart contract's ABI and address
-const contractAddress = "0x301D99bAa8bAf1e6D4404526d904f7c238d8D9Fa";
-
 const App = () => {
-  const [metadataURI, setMetadataURI] = useState("");
-  const [numberOfFractions, setNumberOfFractions] = useState(0);
-  const [status, setStatus] = useState("");
-  const [landId, setLandId] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isMinted, setIsMinted] = useState(false);
+  const [signer, setSigner] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
+
+  if (authToken) {
+    console.log("Logged In.");
+  }
+
+  const [userLogin, _] = useLazyQuery(USER_LOGIN);
+
+  const handleLogin = async () => {
+    console.log("reached");
+    const { signer } = await connectWallet();
+    setSigner(signer);
+    userLogin({ variables: { publicKey: signer.address } }).then((data) =>
+      setAuthToken(data.data.login.token)
+    );
+  };
+
+  useEffect(() => {
+    handleLogin();
+  }, []);
+
+  const [createLandToken, err] = useMutation(CREATE_LAND_TOKEN);
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Connect to Ethereum provider
-  const provider = new ethers.providers.JsonRpcProvider(
-    "http://127.0.0.1:8545/"
-  );
-
-  // Create a wallet instance
-  const privateKey =
-    "0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e"; // Use environment variable
-  const wallet = new ethers.Wallet(privateKey, provider);
-
-  // Create a contract instance
-  const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
   // Fetch data from API
   useEffect(() => {
@@ -252,106 +289,91 @@ const App = () => {
     fetchData(); // Call the fetch function
 
     // Listener for events
-    const listener = async (landId, numberOfFractions, metadataURI) => {
-      console.log(`Land fractionalized!`);
-      console.log(`Land ID: ${landId.toString()}`);
-      console.log(`Number of Fractions: ${numberOfFractions.toString()}`);
-      console.log(`Metadata URI: ${metadataURI}`);
-      setLandId(landId.toString());
-
-      // Parse metadataURI to get land details
-      let landDetail;
-      try {
-        landDetail = JSON.parse(metadataURI); // Ensure metadataURI is a JSON string
-      } catch (error) {
-        console.error("Failed to parse metadataURI:", error);
-        return;
-      }
-
-      // Prepare data for POST request
-      const token = wallet.address; // Assuming you want to send the wallet address as token
-      const dateCreated = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD
-
-      const postData = {
-        land_detail: landDetail,
-        token,
-        no_of_tokens: Number(numberOfFractions), // Ensure this matches your API's expected field name
-        date_created: dateCreated,
-      };
-
-      console.log("Posting data:", postData); // Log postData for debugging
-
-      if (isMinted) {
-        try {
-          const response = await fetch("http://localhost:3000/api/add_land", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(postData),
-          });
-
-          if (!response.ok) throw new Error("Failed to add land");
-
-          console.log("Land added successfully:", await response.json());
-        } catch (error) {
-          console.error("Error adding land:", error);
-        }
-      }
-    };
-
-    contract.on("LandFractionalized", listener);
-
-    return () => {
-      contract.off("LandFractionalized", listener); // Cleanup listener on unmount
-    };
-  }, []); // Runs once on mount
+  }, []);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
-  async function fractionalizeLand(
-    price,
-    city,
-    ward,
-    street_number,
-    plot_number,
-    land_class
-  ) {
-    let metadataURI = JSON.stringify({
-      city,
-      ward,
-      street_number,
-      plot_number,
-      land_class,
-    });
+  async function fractionalizeLand(name) {
+    const requiredData = data.find((item) => item.name === name);
 
-    let numberOfFractions = Math.floor(price / 1000); // Ensure it is an integer and greater than zero
-
-    if (!metadataURI || numberOfFractions <= 0) {
-      setStatus("Please enter valid metadata URI and number of fractions.");
+    if (!requiredData) {
+      console.error("Land data not found.");
       return;
     }
 
-    setIsProcessing(true);
+    const {
+      name: landName,
+      currentPrice,
+      propertyType,
+      propertySize,
+      propertySizeUnit,
+      landmark,
+      distanceFromLandmark,
+      distanceUnit,
+      propertyDescription,
+      latitude,
+      longitude,
+    } = requiredData;
+
+    // console.log(requiredData);
+
     try {
-      const currentNonce = await provider.getTransactionCount(wallet.address); // Fetch current nonce
-      const tx = await contract.fractionalizeLand(
-        metadataURI,
-        numberOfFractions,
-        { nonce: currentNonce }
+      // const contract = new ethers.Contract(
+      //   contractAddress,
+      //   contractABI,
+      //   signer
+      // );
+
+      // const tx = await contract.fractionalizeLand(landName, 100, "");
+      // const receipt = await tx.wait();
+      // console.log("Transaction confirmed:", receipt);
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractABI,
+        signer
       );
 
-      console.log("Transaction sent! Waiting for confirmation...");
-      await tx.wait();
+      try {
+        const approvalTx = await contract.setApprovalForAll(
+          contractAddress,
+          true
+        );
+        const approvalReceipt = await approvalTx.wait();
+        console.log("Approval confirmed:", approvalReceipt);
+      } catch (approvalError) {
+        console.error("Error during approval:", approvalError);
+        return;
+      }
 
-      console.log("Transaction confirmed!", tx.hash);
-      setStatus("Land fractionalized successfully!");
+      const tx = await contract.listTokensForSale(2, 100, 7500);
+      const receipt = await tx.wait();
+      console.log("Transaction confirmed:", receipt);
+
+      // createLandToken({
+      //   variables: {
+      //     input: {
+      //       name: landName,
+      //       currentPrice: currentPrice / 100,
+      //       propertyType,
+      //       propertySize,
+      //       propertySizeUnit,
+      //       landmark,
+      //       distanceFromLandmark,
+      //       distanceUnit,
+      //       propertyDescription,
+      //       latitude,
+      //       longitude,
+      //     },
+      //   },
+      //   context: {
+      //     headers: {
+      //       Authorization: `Bearer ${authToken}`,
+      //     },
+      //   },
+      // });
     } catch (error) {
-      console.error("Error fractionalizing land:", error);
-      setStatus(`Error: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
+      console.error("Error during fractionalization:", error);
     }
   }
 

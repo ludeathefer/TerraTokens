@@ -86,7 +86,8 @@ contract Land is ERC1155, Ownable {
         );
         require(pricePerToken > 0, "Price must be greater than 0");
         require(
-            activeSaleListings[msg.sender].amount == 0,
+            activeSaleListings[msg.sender].amount == 0 &&
+                activeSaleListings[msg.sender].landId == landId,
             "Already has an active listing"
         );
         require(
