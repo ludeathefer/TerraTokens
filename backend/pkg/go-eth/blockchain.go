@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,61 +49,28 @@ func NewConn(cfg config.BlockchainConfig, database *sql.DB) (*BlockchainClient, 
 	return blockchainClient, nil
 }
 
-func ListenToContractEvents(bcc *BlockchainClient) error {
-	log.Printf("Listening...")
-	// Instantiate the contract filterer
+func ListenToContractEvents(bcc *BlockchainClient) {
 	contract, err := NewLandFilterer(bcc.ContractAddress, bcc.Client)
 	if err != nil {
-		return fmt.Errorf("failed to instantiate contract filterer: %v", err)
+		log.Fatalf("failed to instantiate contract filterer: %v", err)
 	}
 
-	// Set up a background context
 	ctx := context.Background()
 
-	// Channel and subscription for LandFractionalized event
-	landFractionalizedCh := make(chan *LandLandFractionalized)
-	landFractionalizedSub, err := contract.WatchLandFractionalized(&bind.WatchOpts{Context: ctx}, landFractionalizedCh, nil)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to LandFractionalized event: %v", err)
-	}
+	go listenEvent("LandFractionalized", func() error {
+		log.Println("Starting LandFractionalized listener...")
+		ch := make(chan *LandLandFractionalized)
+		sub, err := contract.WatchLandFractionalized(&bind.WatchOpts{Context: ctx}, ch, nil)
+		if err != nil {
+			return err
+		}
+		defer sub.Unsubscribe()
 
-	// Channel and subscription for TransferFractionalTokens event
-	transferTokensCh := make(chan *LandTransferFractionalTokens)
-	transferTokensSub, err := contract.WatchTransferFractionalTokens(&bind.WatchOpts{Context: ctx}, transferTokensCh, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to TransferFractionalTokens event: %v", err)
-	}
-
-	// Channel and subscription for TokensListedForSale event
-	tokensListedCh := make(chan *LandTokensListedForSale)
-	tokensListedSub, err := contract.WatchTokensListedForSale(&bind.WatchOpts{Context: ctx}, tokensListedCh, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to TokensListedForSale event: %v", err)
-	}
-
-	// Channel and subscription for TokensPurchased event
-	tokensPurchasedCh := make(chan *LandTokensPurchased)
-	tokensPurchasedSub, err := contract.WatchTokensPurchased(&bind.WatchOpts{Context: ctx}, tokensPurchasedCh, nil, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to TokensPurchased event: %v", err)
-	}
-
-	// Channel and subscription for TokensListingCancelled event
-	tokensCancelledCh := make(chan *LandTokensListingCancelled)
-	tokensCancelledSub, err := contract.WatchTokensListingCancelled(&bind.WatchOpts{Context: ctx}, tokensCancelledCh, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to TokensListingCancelled event: %v", err)
-	}
-
-	// Start goroutines to handle each event
-	// LandFractionalized
-	go func() {
 		for {
 			select {
-			case event, ok := <-landFractionalizedCh:
+			case event, ok := <-ch:
 				if !ok {
-					log.Println("landFractionalizedCh closed")
-					return
+					return nil
 				}
 				log.Printf("LandFractionalized: LandID=%v, Name=%v, Fractions=%v, MetadataURI=%s\n", event.LandId, event.Name, event.NumberOfFractions, event.MetadataURI)
 				landId := int32(event.LandId.Int64())
@@ -119,59 +87,37 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 				}
 
 				updateMinerOwnedTokens := `
-					INSERT INTO owned_tokens (user_public_key, land_token_id, quantity)
-					VALUES (?, ?, ?)
+					INSERT INTO owned_tokens (user_public_key, land_token_id, quantity, bought_price)
+					VALUES (?, ?, ?, ?)
 					ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity);
 				`
-				_, err = db.ExecContext(ctx, updateMinerOwnedTokens, bcc.MinerAddress.String(), landId, numberOfFractions)
+				_, err = db.ExecContext(ctx, updateMinerOwnedTokens, bcc.MinerAddress.String(), landId, numberOfFractions, 0)
 				if err != nil {
 					log.Printf("failed to update miner's owned_tokens: %v", err)
 				}
 
-			case err := <-landFractionalizedSub.Err():
-				if err != nil {
-					log.Printf("LandFractionalized subscription error: %v", err)
-				} else {
-					log.Println("LandFractionalized subscription closed gracefully.")
-				}
-				return
+			case err := <-sub.Err():
+				return err
 			}
 		}
-	}()
+	})
 
-	// TransferFractionalTokens
-	go func() {
-		log.Print("Listening to TransferFractionalTokens...")
-		for {
-			select {
-			case event, ok := <-transferTokensCh:
-				if !ok {
-					log.Println("transferTokensCh closed")
-					return
-				}
-				log.Printf("TransferFractionalTokens: From=%s, To=%s, LandID=%v, Amount=%v\n", event.From.Hex(), event.To.Hex(), event.LandId, event.Amount)
-
-			case err := <-transferTokensSub.Err():
-				if err != nil {
-					log.Printf("TransferFractionalTokens subscription error: %v", err)
-				} else {
-					log.Println("TransferFractionalTokens subscription closed gracefully.")
-				}
-				return
-			}
+	go listenEvent("TokensListedForSale", func() error {
+		log.Println("Starting TokensListedForSale listener...")
+		ch := make(chan *LandTokensListedForSale)
+		sub, err := contract.WatchTokensListedForSale(&bind.WatchOpts{Context: ctx}, ch, nil, nil)
+		if err != nil {
+			return err
 		}
-	}()
+		defer sub.Unsubscribe()
 
-	// TokensListedForSale
-	go func() {
-		log.Print("Listening to TokensListedForSale...")
 		for {
 			select {
-			case event, ok := <-tokensListedCh:
+			case event, ok := <-ch:
 				if !ok {
-					log.Println("tokensListedCh closed")
-					return
+					return nil
 				}
+
 				log.Printf("TokensListedForSale: LandID=%v, Seller=%s, Amount=%v, PricePerToken=%v\n", event.LandId, event.Seller.Hex(), event.Amount, event.PricePerToken)
 
 				landId := int32(event.LandId.Int64())
@@ -187,26 +133,26 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 					log.Printf("Failed to insert sale into database: %v", err)
 				}
 
-			case err := <-tokensListedSub.Err():
-				if err != nil {
-					log.Printf("TokensListedForSale subscription error: %v", err)
-				} else {
-					log.Println("TokensListedForSale subscription closed gracefully.")
-				}
-				return
+			case err := <-sub.Err():
+				return err
 			}
 		}
-	}()
+	})
 
-	// TokensPurchased
-	go func() {
-		log.Print("Listening to TokensPurchased...")
+	go listenEvent("TokensPurchased", func() error {
+		log.Println("Starting TokensPurchased listener...")
+		ch := make(chan *LandTokensPurchased)
+		sub, err := contract.WatchTokensPurchased(&bind.WatchOpts{Context: ctx}, ch, nil, nil, nil)
+		if err != nil {
+			return err
+		}
+		defer sub.Unsubscribe()
+
 		for {
 			select {
-			case event, ok := <-tokensPurchasedCh:
+			case event, ok := <-ch:
 				if !ok {
-					log.Println("tokensPurchasedCh closed")
-					return
+					return nil
 				}
 				log.Printf("TokensPurchased: LandID=%v, Buyer=%s, Seller=%s, Amount=%v, PricePerToken=%v\n", event.LandId, event.Buyer.Hex(), event.Seller.Hex(), event.Amount, event.PricePerToken)
 
@@ -223,7 +169,7 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 				updateBuyerOwnedTokens := `
 								INSERT INTO owned_tokens (user_public_key, land_token_id, bought_price, quantity)
 								VALUES (?, ?, ?)
-								ON DUPLICATE KEY UPDATE 
+								ON DUPLICATE KEY UPDATE
 								bought_price = VALUES(bought_price),
 								quantity = quantity + VALUES(quantity);
 				`
@@ -261,26 +207,26 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 					log.Printf("failed to delete sale if quantity is zero: %v", err)
 				}
 
-			case err := <-tokensPurchasedSub.Err():
-				if err != nil {
-					log.Printf("TokensPurchased subscription error: %v", err)
-				} else {
-					log.Println("TokensPurchased subscription closed gracefully.")
-				}
-				return
+			case err := <-sub.Err():
+				return err
 			}
 		}
-	}()
+	})
 
-	// TokensListingCancelled
-	go func() {
-		log.Print("Listening to TokensListingCancelled...")
+	go listenEvent("TokensListingCancelled", func() error {
+		log.Println("Starting TokensListingCancelled listener...")
+		ch := make(chan *LandTokensListingCancelled)
+		sub, err := contract.WatchTokensListingCancelled(&bind.WatchOpts{Context: ctx}, ch, nil, nil)
+		if err != nil {
+			return err
+		}
+		defer sub.Unsubscribe()
+
 		for {
 			select {
-			case event, ok := <-tokensCancelledCh:
+			case event, ok := <-ch:
 				if !ok {
-					log.Println("tokensCancelledCh closed")
-					return
+					return nil
 				}
 				log.Printf("TokensListingCancelled: LandID=%v, Seller=%s, Amount=%v, PricePerToken=%v\n", event.LandId, event.Seller.Hex(), event.Amount, event.PricePerToken)
 
@@ -290,16 +236,187 @@ func ListenToContractEvents(bcc *BlockchainClient) error {
 					log.Printf("failed to delete sale: %v", err)
 				}
 
-			case err := <-tokensCancelledSub.Err():
-				if err != nil {
-					log.Printf("TokensListingCancelled subscription error: %v", err)
-				} else {
-					log.Println("TokensListingCancelled subscription closed gracefully.")
-				}
-				return
+			case err := <-sub.Err():
+				return err
 			}
 		}
-	}()
-
-	return nil
+	})
 }
+
+func listenEvent(name string, listenFunc func() error) {
+	for {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Recovered from panic in %s listener: %v", name, r)
+				}
+			}()
+
+			if err := listenFunc(); err != nil {
+				log.Printf("Error in %s listener: %v", name, err)
+			}
+		}()
+
+		log.Printf("Restarting %s listener in 3 seconds...", name)
+		time.Sleep(3 * time.Second)
+	}
+}
+
+// func ListenToContractEvents(bcc *BlockchainClient) error {
+// 	// Instantiate the contract filterer
+// 	contract, err := NewLandFilterer(bcc.ContractAddress, bcc.Client)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to instantiate contract filterer: %v", err)
+// 	}
+
+// 	// Set up a background context
+// 	ctx := context.Background()
+
+// 	// Channel and subscription for LandFractionalized event
+// 	landFractionalizedCh := make(chan *LandLandFractionalized)
+// 	landFractionalizedSub, err := contract.WatchLandFractionalized(&bind.WatchOpts{Context: ctx}, landFractionalizedCh, nil)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to subscribe to LandFractionalized event: %v", err)
+// 	}
+
+// 	// Channel and subscription for TransferFractionalTokens event
+// 	transferTokensCh := make(chan *LandTransferFractionalTokens)
+// 	transferTokensSub, err := contract.WatchTransferFractionalTokens(&bind.WatchOpts{Context: ctx}, transferTokensCh, nil, nil)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to subscribe to TransferFractionalTokens event: %v", err)
+// 	}
+
+// 	// Channel and subscription for TokensListedForSale event
+// 	tokensListedCh := make(chan *LandTokensListedForSale)
+// 	tokensListedSub, err := contract.WatchTokensListedForSale(&bind.WatchOpts{Context: ctx}, tokensListedCh, nil, nil)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to subscribe to TokensListedForSale event: %v", err)
+// 	}
+
+// 	// Channel and subscription for TokensPurchased event
+// 	tokensPurchasedCh := make(chan *LandTokensPurchased)
+// 	tokensPurchasedSub, err := contract.WatchTokensPurchased(&bind.WatchOpts{Context: ctx}, tokensPurchasedCh, nil, nil, nil)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to subscribe to TokensPurchased event: %v", err)
+// 	}
+
+// 	// Channel and subscription for TokensListingCancelled event
+// 	tokensCancelledCh := make(chan *LandTokensListingCancelled)
+// 	tokensCancelledSub, err := contract.WatchTokensListingCancelled(&bind.WatchOpts{Context: ctx}, tokensCancelledCh, nil, nil)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to subscribe to TokensListingCancelled event: %v", err)
+// 	}
+
+// 	// Start goroutines to handle each event
+// 	// LandFractionalized
+// 	go func() {
+// 		for {
+// 			select {
+// 			case event, ok := <-landFractionalizedCh:
+// 				if !ok {
+// 					log.Println("landFractionalizedCh closed")
+// 					return
+// 				}
+
+// 			case err := <-landFractionalizedSub.Err():
+// 				if err != nil {
+// 					log.Printf("LandFractionalized subscription error: %v", err)
+// 				} else {
+// 					log.Println("LandFractionalized subscription closed gracefully.")
+// 				}
+// 				return
+// 			}
+// 		}
+// 	}()
+
+// 	// TransferFractionalTokens
+// 	go func() {
+// 		log.Print("Listening to TransferFractionalTokens...")
+// 		for {
+// 			select {
+// 			case event, ok := <-transferTokensCh:
+// 				if !ok {
+// 					log.Println("transferTokensCh closed")
+// 					return
+// 				}
+// 				log.Printf("TransferFractionalTokens: From=%s, To=%s, LandID=%v, Amount=%v\n", event.From.Hex(), event.To.Hex(), event.LandId, event.Amount)
+
+// 			case err := <-transferTokensSub.Err():
+// 				if err != nil {
+// 					log.Printf("TransferFractionalTokens subscription error: %v", err)
+// 				} else {
+// 					log.Println("TransferFractionalTokens subscription closed gracefully.")
+// 				}
+// 				return
+// 			}
+// 		}
+// 	}()
+
+// 	// TokensListedForSale
+// 	go func() {
+// 		log.Print("Listening to TokensListedForSale...")
+// 		for {
+// 			select {
+// 			case event, ok := <-tokensListedCh:
+// 				if !ok {
+// 					log.Println("tokensListedCh closed")
+// 					return
+// 				}
+
+// 			case err := <-tokensListedSub.Err():
+// 				if err != nil {
+// 					log.Printf("TokensListedForSale subscription error: %v", err)
+// 				} else {
+// 					log.Println("TokensListedForSale subscription closed gracefully.")
+// 				}
+// 				return
+// 			}
+// 		}
+// 	}()
+
+// 	// TokensPurchased
+// 	go func() {
+// 		log.Print("Listening to TokensPurchased...")
+// 		for {
+// 			select {
+// 			case event, ok := <-tokensPurchasedCh:
+// 				if !ok {
+// 					log.Println("tokensPurchasedCh closed")
+// 					return
+// 				}
+
+// 			case err := <-tokensPurchasedSub.Err():
+// 				if err != nil {
+// 					log.Printf("TokensPurchased subscription error: %v", err)
+// 				} else {
+// 					log.Println("TokensPurchased subscription closed gracefully.")
+// 				}
+// 				return
+// 			}
+// 		}
+// 	}()
+
+// 	// TokensListingCancelled
+// 	go func() {
+// 		log.Print("Listening to TokensListingCancelled...")
+// 		for {
+// 			select {
+// 			case event, ok := <-tokensCancelledCh:
+// 				if !ok {
+// 					log.Println("tokensCancelledCh closed")
+// 					return
+// 				}
+
+// 			case err := <-tokensCancelledSub.Err():
+// 				if err != nil {
+// 					log.Printf("TokensListingCancelled subscription error: %v", err)
+// 				} else {
+// 					log.Println("TokensListingCancelled subscription closed gracefully.")
+// 				}
+// 				return
+// 			}
+// 		}
+// 	}()
+
+// 	return nil
+// }
